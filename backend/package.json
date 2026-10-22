@@ -3,10 +3,7 @@
   "type": "module",
   "scripts": {
     "test": "bun test",
-    "typecheck": "tsc --noEmit -p .",
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
     "@hono/zod-validator": "^0.9.1",
@@ -18,8 +15,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261022.1",
     "@types/bun": "^1.4.3",
-    "typescript": "~6.0.3",
-    "wrangler": "^4.110.0"
+    "typescript": "~6.0.3"
   },
   "exports": {
     "./contract": "./src/presentation/http/contract.ts"
