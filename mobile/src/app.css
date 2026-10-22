@@ -1,0 +1,124 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+@import '@fontsource/newsreader/latin-400-italic.css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Candlelight: warm near-black, amber accent. Aurelius is dark-only, so the
+   same tokens apply everywhere. */
+:root {
+  --radius: 1rem;
+
+  --background: #110e0b;
+  --foreground: #f4ece1;
+  --card: #1c1814;
+  --card-foreground: #f4ece1;
+  --popover: #1c1814;
+  --popover-foreground: #f4ece1;
+  --primary: #e3a04f;
+  --primary-foreground: #1a120a;
+  --secondary: #1c1814;
+  --secondary-foreground: #f4ece1;
+  --muted: #1c1814;
+  --muted-foreground: #afa496;
+  --accent: #2c2620;
+  --accent-foreground: #f4ece1;
+  --destructive: #e5735c;
+  --border: #2c2620;
+  --input: #2c2620;
+  --ring: #e3a04f;
+
+  /* App-specific */
+  --soft: #d3c7b6; /* secondary body text */
+  --faint: #5e544a; /* empty checkboxes */
+  --placeholder: #8e8274;
+  --amber: #e8b36b; /* accent text, links, progress fills */
+  --amber-bright: #f2c98a; /* highlighted numbers */
+  --ember: #e8b07a; /* journal prompt */
+  --track: #2e2721;
+  --chip: #2e2418;
+  --nav-border: #221d18;
+  --heat-0: #231e19;
+  --heat-1: #3d2c1a;
+  --heat-2: #6b4a24;
+  --heat-3: #e3a04f;
+  --heat-4: #f7dca8;
+  --rest-ring: #8e8274;
+  --grace-dot: #75695c;
+}
+
+@theme inline {
+  --font-sans: 'Geist Variable', system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+  --font-serif: 'Newsreader', Georgia, serif;
+
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 6px);
+  --radius-lg: calc(var(--radius) - 4px);
+  --radius-xl: var(--radius);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-soft: var(--soft);
+  --color-faint: var(--faint);
+  --color-placeholder: var(--placeholder);
+  --color-amber: var(--amber);
+  --color-amber-bright: var(--amber-bright);
+  --color-ember: var(--ember);
+  --color-track: var(--track);
+  --color-chip: var(--chip);
+  --color-nav-border: var(--nav-border);
+  --color-heat-0: var(--heat-0);
+  --color-heat-1: var(--heat-1);
+  --color-heat-2: var(--heat-2);
+  --color-heat-3: var(--heat-3);
+  --color-heat-4: var(--heat-4);
+  --color-rest-ring: var(--rest-ring);
+  --color-grace-dot: var(--grace-dot);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  ::placeholder {
+    color: var(--placeholder);
+  }
+}
+
+@layer components {
+  /* Small monospace label: dates, counters, section meta. */
+  .eyebrow {
+    @apply font-mono text-xs tracking-[0.08em] text-muted-foreground uppercase;
+  }
+  /* Rows inside a card, divided by hairlines. */
+  .card-list > * + * {
+    @apply border-t border-border;
+  }
+}
