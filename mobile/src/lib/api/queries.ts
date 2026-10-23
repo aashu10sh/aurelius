@@ -1,6 +1,7 @@
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query'
 import type { GoalStatus, TodayResponse } from 'backend/contract'
 import { toast } from 'svelte-sonner'
+import { authClient } from '../auth'
 import { api } from './endpoints'
 import { ApiError } from './http'
 
@@ -24,6 +25,7 @@ export const keys = {
   goal: (id: string) => ['goal', id] as const,
   journal: ['journal'] as const,
   restDays: ['rest-days'] as const,
+  accounts: ['accounts'] as const,
 }
 
 export const meQuery = () => createQuery(() => ({ queryKey: keys.me, queryFn: api.me.get }))
@@ -32,6 +34,17 @@ export const progressQuery = () => createQuery(() => ({ queryKey: keys.progress,
 export const weekQuery = () => createQuery(() => ({ queryKey: keys.week, queryFn: api.week.get }))
 export const journalQuery = () => createQuery(() => ({ queryKey: keys.journal, queryFn: () => api.journal.list() }))
 export const restDaysQuery = () => createQuery(() => ({ queryKey: keys.restDays, queryFn: api.restDays.list }))
+
+// Sign-in methods ('credential' = username and password, 'google'), straight from Better Auth.
+export const accountsQuery = () =>
+  createQuery(() => ({
+    queryKey: keys.accounts,
+    queryFn: async () => {
+      const { data, error } = await authClient.listAccounts()
+      if (error) throw new Error(error.message ?? 'Could not load sign-in methods')
+      return data.map(({ id, providerId }) => ({ id, providerId }))
+    },
+  }))
 
 export const goalsQuery = (statuses: () => GoalStatus[]) =>
   createQuery(() => ({ queryKey: keys.goals(statuses()), queryFn: () => api.goals.list(statuses()) }))

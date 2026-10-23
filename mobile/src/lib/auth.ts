@@ -16,3 +16,13 @@ export const authClient = createAuthClient({
     }),
   ],
 })
+
+// Google sign-in failures come back as /sign-in?error=<code>.
+const oauthErrors: Record<string, string> = {
+  account_not_linked:
+    'That email already has an Aurelius account. Sign in with your username and password, then connect Google in Settings.',
+  account_already_linked_to_different_user: 'That Google account is already connected to another Aurelius account.',
+  access_denied: 'Google sign-in was cancelled.',
+}
+
+export const authErrorMessage = (code: string) => oauthErrors[code] ?? 'Google sign-in didn’t work. Please try again.'

@@ -25,6 +25,12 @@
 	const createGoal = useAction((goal: CreateGoalRequest) => api.goals.create(goal), { quiet: true });
 	const savePrefs = useAction((reminderTime: string) => api.me.updatePreferences({ reminderTime }));
 
+	// Every new account passes through here, from either sign-up path, so
+	// this is where days start rolling over in the user's own time zone.
+	$effect(() => {
+		api.me.updatePreferences({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }).catch(() => {});
+	});
+
 	const intro = [
 		{
 			title: 'Big goals, small tasks',

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { navigate, p } from 'sv-router/generated';
-	import { api } from '$lib/api/endpoints';
 	import Field from '$lib/components/app/Field.svelte';
+	import GoogleButton from '$lib/components/app/GoogleButton.svelte';
+	import OrDivider from '$lib/components/app/OrDivider.svelte';
 	import TopBar from '$lib/components/app/TopBar.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { authClient } from '$lib/auth';
@@ -30,8 +31,6 @@
 			return;
 		}
 		await refreshSession();
-		// Days roll over in the user's own time zone.
-		await api.me.updatePreferences({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }).catch(() => {});
 		navigate('/onboarding');
 	}
 </script>
@@ -44,6 +43,8 @@
 	</div>
 
 	<form class="flex flex-1 flex-col gap-6" onsubmit={submit}>
+		<GoogleButton />
+		<OrDivider />
 		<Field id="name" label="Name" bind:value={name} autocomplete="name" required />
 		<Field id="username" label="Username" bind:value={username} autocomplete="username" autocapitalize="none" minlength={3} required />
 		<Field id="email" label="Email" type="email" bind:value={email} autocomplete="email" required />

@@ -45,7 +45,10 @@ import type { AppContainer } from './presentation/http/container'
 // Everything is cheap to construct, so it is built per request.
 export const makeContainer = (env: Env): AppContainer => {
   const db = createDb(env.DB)
-  const auth = createAuth(db, env.BETTER_AUTH_SECRET)
+  const auth = createAuth(db, {
+    secret: env.BETTER_AUTH_SECRET,
+    google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET },
+  })
   const clock = new SystemClock()
   const ids = new UuidGenerator()
 

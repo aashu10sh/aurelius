@@ -69,6 +69,13 @@ Screens read and write only through `$lib/api/queries.ts`:
 - **Ticking is instant:** `useToggleTask` updates Today immediately and rolls back if the server refuses.
 - **Same-origin API:** requests go to relative `/api/...` paths, so auth cookies stay first-party. In production, `worker/index.ts` (`runWorkerFirst: ["/api/*"]`) forwards them to the API over a service binding.
 
+## Auth
+
+- **Session:** `$lib/auth.ts` is the Better Auth client, and `$lib/session.ts` caches the session for route guards.
+- **Google:** `GoogleButton` (on sign-in and sign-up) leaves the app for Google. New accounts return to `/onboarding`, existing ones to `/today`, and failures to `/sign-in?error=<code>`. `authErrorMessage` turns the code into copy.
+- **Sign-in methods:** Settings lists them and connects or disconnects Google.
+- **Time zone:** onboarding sets it for every new account, whichever way it signed up.
+
 ## Design system
 
 The tokens live in `src/app.css`. shadcn's names (`--primary`, `--card`, `--muted-foreground`…) carry the Candlelight colors, so stock components come out amber. Aurelius-specific tokens are available as Tailwind classes:

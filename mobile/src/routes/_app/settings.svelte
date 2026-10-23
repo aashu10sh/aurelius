@@ -3,17 +3,44 @@
 	import { navigate, p } from 'sv-router/generated';
 	import { toast } from 'svelte-sonner';
 	import { api } from '$lib/api/endpoints';
-	import { meQuery, restDaysQuery, todayQuery, useAction } from '$lib/api/queries';
+	import { accountsQuery, meQuery, restDaysQuery, todayQuery, useAction } from '$lib/api/queries';
 	import Field from '$lib/components/app/Field.svelte';
 	import LoadState from '$lib/components/app/LoadState.svelte';
 	import TopBar from '$lib/components/app/TopBar.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { authClient, authErrorMessage } from '$lib/auth';
 	import { dayLabel } from '$lib/format';
 	import { signOut } from '$lib/session';
 
 	const me = meQuery();
 	const restDays = restDaysQuery();
 	const today = todayQuery();
+	const accounts = accountsQuery();
+	const google = $derived(accounts.data?.find((a) => a.providerId === 'google'));
+	const hasGoogle = $derived(!!google);
+	const hasPassword = $derived(accounts.data?.some((a) => a.providerId === 'credential') ?? false);
+	let linking = $state(false);
+
+	// Connecting Google leaves the app and returns here, with ?error=<code> if it failed.
+	const oauthError = new URLSearchParams(location.search).get('error');
+	if (oauthError) {
+		toast.error(authErrorMessage(oauthError));
+		history.replaceState(history.state, '', location.pathname);
+	}
+
+	async function connectGoogle() {
+		linking = true;
+		const { error } = await authClient.linkSocial({ provider: 'google', callbackURL: '/settings', errorCallbackURL: '/settings' });
+		if (error) {
+			linking = false;
+			toast.error(error.message ?? 'Could not connect Google');
+		}
+	}
+
+	const disconnectGoogle = useAction(async (accountId: string) => {
+		const { error } = await authClient.unlinkAccount({ accountId });
+		if (error) throw new Error(error.message ?? 'Could not disconnect Google');
+	});
 
 	let timezone = $state('');
 	let reminderTime = $state('');
@@ -62,7 +89,7 @@
 		<div class="flex size-12 items-center justify-center rounded-full bg-chip text-lg font-semibold text-amber-bright">{me.data.name.charAt(0).toUpperCase()}</div>
 		<div class="flex min-w-0 flex-col">
 			<span class="text-[17px] font-semibold">{me.data.name}</span>
-			<span class="truncate font-mono text-xs text-muted-foreground">@{me.data.username} · {me.data.email}</span>
+			<span class="truncate font-mono text-xs text-muted-foreground">{me.data.username ? `@${me.data.username} · ` : ''}{me.data.email}</span>
 		</div>
 	</div>
 
@@ -81,6 +108,29 @@
 		</div>
 		<Button type="submit" variant="secondary" size="block" disabled={save.isPending}>Save preferences</Button>
 	</form>
+
+	<section class="flex flex-col gap-3">
+		<h2 class="m-0 text-[17px] font-semibold">Sign-in methods</h2>
+		<div class="card-list flex flex-col rounded-2xl bg-card px-4">
+			<div class="flex min-h-14 items-center justify-between gap-3">
+				<span class="text-[15px]">Username and password</span>
+				<span class="font-mono text-xs {hasPassword ? 'text-amber' : 'text-muted-foreground'}">{hasPassword ? 'On' : 'Not set'}</span>
+			</div>
+			<div class="flex min-h-14 items-center justify-between gap-3">
+				<span class="text-[15px]">Google</span>
+				{#if !accounts.data}
+					<span class="font-mono text-xs text-muted-foreground">…</span>
+				{:else if !hasGoogle}
+					<Button size="sm" variant="secondary" disabled={linking} onclick={connectGoogle}>{linking ? 'Opening…' : 'Connect'}</Button>
+				{:else if google && hasPassword}
+					<Button size="sm" variant="ghost" class="text-muted-foreground" disabled={disconnectGoogle.isPending} onclick={() => disconnectGoogle.mutate(google.id)}>Disconnect</Button>
+				{:else}
+					<span class="font-mono text-xs text-amber">On</span>
+				{/if}
+			</div>
+		</div>
+		<p class="m-0 text-sm text-muted-foreground">Use any of these to sign in. Google can be disconnected while a password is set.</p>
+	</section>
 
 	<section class="flex flex-col gap-3">
 		<h2 class="m-0 text-[17px] font-semibold">Rest days</h2>
