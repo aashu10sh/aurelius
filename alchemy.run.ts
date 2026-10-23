@@ -1,6 +1,7 @@
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Drizzle from "alchemy/Drizzle";
+import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 
@@ -44,6 +45,9 @@ export const Api = Cloudflare.Worker(
       env: {
         DB: yield* Db,
         BETTER_AUTH_SECRET: (yield* AuthSecret).text,
+        // Google OAuth client, from backend/.env (see the stack's `secrets`).
+        GOOGLE_CLIENT_ID: yield* Config.NonEmptyString("GOOGLE_CLIENT_ID"),
+        GOOGLE_CLIENT_SECRET: yield* Config.Redacted("GOOGLE_CLIENT_SECRET"),
       },
     };
   }),
@@ -55,6 +59,9 @@ export default Alchemy.Stack(
   {
     providers: Layer.mergeAll(Cloudflare.providers(), Drizzle.providers()),
     state: Alchemy.localState(),
+    // Config values (the Google OAuth client) come from backend/.env, which
+    // is gitignored; the shell environment still overrides it.
+    secrets: Alchemy.Secrets.DotEnv({ path: "./backend/.env" }),
   },
   Effect.gen(function* () {
     const api = yield* Api;

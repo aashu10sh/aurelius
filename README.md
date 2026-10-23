@@ -35,7 +35,7 @@ The visual design is "Candlelight amber": warm near-black, amber accents, Geist 
 | Runtime | Cloudflare Workers |
 | API | [Hono](https://hono.dev), Zod request validation |
 | Database | Cloudflare D1 (SQLite) via [Drizzle ORM](https://orm.drizzle.team) 1.0 rc |
-| Auth | [Better Auth](https://better-auth.com): email and password plus usernames, cookie sessions |
+| Auth | [Better Auth](https://better-auth.com): username and password, or Google; cookie sessions |
 | Frontend | Svelte 5 + Vite, [sv-router](https://sv-router.dev) (file-based), TanStack Svelte Query |
 | UI | Tailwind CSS v4, [shadcn-svelte](https://shadcn-svelte.com) (Bits UI), Lucide |
 | PWA | vite-plugin-pwa (Workbox): installable, app shell works offline |
@@ -106,8 +106,11 @@ The browser only ever talks to the app's origin. The app's small edge worker (`m
 
 ```sh
 bun install
+cp backend/.env.example backend/.env   # then fill in the Google OAuth client
 bun run dev
 ```
+
+`backend/.env` holds the Google OAuth client ID and secret (gitignored). In the Google Cloud console, the OAuth client needs each app origin under **Authorized JavaScript origins** (`http://localhost:5173`, the deployed app URL) and `<origin>/api/auth/callback/google` under **Authorized redirect URIs**. Use the app URL, never the API Worker's.
 
 `bun run dev` (Alchemy) starts everything locally:
 
@@ -167,7 +170,7 @@ All routes live under `/api`. Everything except `/health` and `/auth/*` requires
 
 | Area | Endpoints |
 | --- | --- |
-| Auth | `/auth/*` (Better Auth) |
+| Auth | `/auth/*` (Better Auth: sign-in, sign-up, Google, account linking) |
 | Screens | `GET /today`, `GET /progress`, `GET /week`, `PUT /week/reflection` |
 | Goals | `GET /goals?status=…`, `POST /goals`, `GET /goals/:id`, `PATCH /goals/:id`, `POST /goals/:id/status` |
 | Tasks | `POST /goals/:id/tasks`, `PATCH /tasks/:id`, `POST /tasks/:id/completion`, `DELETE /tasks/:id/completion` |
