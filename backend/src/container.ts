@@ -122,7 +122,7 @@ export const makeContainer = (env: Env): AppContainer => {
       setGoalStatus: new SetGoalStatusUseCase(goals, clock),
       addTask: new AddTaskUseCase(goals, tasks, ids, clock),
       updateTask: new UpdateTaskUseCase(goals, tasks),
-      completeTask: new CompleteTaskUseCase(users, goals, tasks, completions, calendar, ids, clock),
+      completeTask: new CompleteTaskUseCase(users, goals, tasks, completions, calendar, ids, clock, score),
       undoCompletion: new UndoCompletionUseCase(users, goals, tasks, completions, calendar),
       addMilestone: new AddMilestoneUseCase(goals, milestones, ids),
       updateMilestone: new UpdateMilestoneUseCase(goals, milestones, clock),

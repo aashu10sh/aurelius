@@ -8,9 +8,9 @@ import AppProgress from '../src/routes/_app/progress.svelte';
 import AppGoalsIndex from '../src/routes/_app/goals/index.svelte';
 import AppGoalsNew from '../src/routes/_app/goals/new.svelte';
 import AppGoalsId from '../src/routes/_app/goals/[id].svelte';
-import AppSettings from '../src/routes/_app/settings.svelte';
 import AppJournalWeek from '../src/routes/_app/journal/week.svelte';
 import AppJournalIndex from '../src/routes/_app/journal/index.svelte';
+import AppSettings from '../src/routes/_app/settings.svelte';
 import Welcome from '../src/routes/welcome.svelte';
 import SignIn from '../src/routes/sign-in.svelte';
 import SignUp from '../src/routes/sign-up.svelte';
@@ -37,14 +37,14 @@ export const routes = {
     'layout': AppLayout,
     'hooks': appHooks
   },
-  '/settings': {
-    '/': AppSettings,
-    'layout': AppLayout,
-    'hooks': appHooks
-  },
   '/journal': {
     '/week': AppJournalWeek,
     '/': AppJournalIndex,
+    'layout': AppLayout,
+    'hooks': appHooks
+  },
+  '/settings': {
+    '/': AppSettings,
     'layout': AppLayout,
     'hooks': appHooks
   },

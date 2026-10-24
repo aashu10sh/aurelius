@@ -10,6 +10,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import { authClient, authErrorMessage } from '$lib/auth';
 	import { dayLabel } from '$lib/format';
+	import { haptic } from '$lib/feel/haptics';
+	import { feel } from '$lib/feel/prefs.svelte';
+	import { play } from '$lib/feel/sound';
 	import { push } from '$lib/push.svelte';
 	import { signOut } from '$lib/session';
 
@@ -155,6 +158,21 @@
 				<p class="m-0 text-sm text-muted-foreground">At your daily reminder time, only if nothing’s ticked yet. On Sundays, a nudge to reflect on your week.</p>
 			{/if}
 		{/if}
+	</section>
+
+	<section class="flex flex-col gap-3">
+		<h2 class="m-0 text-[17px] font-semibold">Sound and haptics</h2>
+		<div class="card-list flex flex-col rounded-2xl bg-card px-4">
+			<label class="flex min-h-14 items-center justify-between gap-3">
+				<span class="text-[15px]">Sounds</span>
+				<input type="checkbox" bind:checked={feel.sound} onchange={() => play('tick')} class="size-6 accent-[var(--primary)]" />
+			</label>
+			<label class="flex min-h-14 items-center justify-between gap-3">
+				<span class="text-[15px]">Haptics</span>
+				<input type="checkbox" bind:checked={feel.haptics} onchange={() => haptic('tap')} class="size-6 accent-[var(--primary)]" />
+			</label>
+		</div>
+		<p class="m-0 text-sm text-muted-foreground">On this device. On iPhone, sounds follow the silent switch.</p>
 	</section>
 
 	<section class="flex flex-col gap-3">

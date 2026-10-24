@@ -90,7 +90,7 @@ const world = () => {
     metrics,
     createGoal: new CreateGoalUseCase(goals, tasks, milestones, metrics, ids, clock),
     setGoalStatus: new SetGoalStatusUseCase(goals, clock),
-    completeTask: new CompleteTaskUseCase(users, goals, tasks, completions, calendar, ids, clock),
+    completeTask: new CompleteTaskUseCase(users, goals, tasks, completions, calendar, ids, clock, score),
     undoCompletion: new UndoCompletionUseCase(users, goals, tasks, completions, calendar),
     updateMilestone: new UpdateMilestoneUseCase(goals, milestones, clock),
     getToday: new GetTodayUseCase(users, goals, tasks, completions, milestones, metrics, journal, score, calendar),
@@ -162,6 +162,18 @@ describe('CompleteTaskUseCase', () => {
     const completion = await w.completeTask.execute('hari', design!.id)
     expect(completion).toMatchObject({ day: '2026-10-22', xpAwarded: 30 })
     await expect(w.completeTask.execute('hari', design!.id)).rejects.toThrow(ConflictError)
+  })
+
+  test('reports the level a tick crosses into', async () => {
+    await seniorGoal(w)
+    await w.updateMilestone.execute('hari', w.milestones.rows[0]!.id, { done: true }) // 50 XP
+    expect((await w.completeTask.execute('hari', w.tasks.rows[1]!.id)).levelUp).toBeNull() // 60
+    expect((await w.completeTask.execute('hari', w.tasks.rows[0]!.id)).levelUp).toBeNull() // 90
+    await w.createGoal.execute('hari', {
+      title: 'Get fit',
+      tasks: [{ title: 'Gym', effort: 'heavy', cadence: { type: 'daily', count: 1 } }],
+    })
+    expect((await w.completeTask.execute('hari', w.tasks.rows.at(-1)!.id)).levelUp).toBe(1) // 120 ≥ 100
   })
 
   test("another user's task reads as not found", async () => {

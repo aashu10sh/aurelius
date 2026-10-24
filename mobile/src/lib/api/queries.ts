@@ -1,5 +1,5 @@
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query'
-import type { GoalStatus, TodayResponse } from 'backend/contract'
+import type { CompletionResponse, GoalStatus, TodayResponse } from 'backend/contract'
 import { toast } from 'svelte-sonner'
 import { authClient } from '../auth'
 import { api } from './endpoints'
@@ -71,10 +71,12 @@ export const useAction = <Args, Result>(fn: (args: Args) => Promise<Result>, opt
 export const useToggleTask = () => {
   const client = useQueryClient()
   type Vars = { taskId: string; done: boolean }
-  return createMutation<void, Error, Vars, { previous?: TodayResponse }>(() => ({
+  // Resolves to the completion when ticking (it carries `levelUp`), null when unticking.
+  return createMutation<CompletionResponse | null, Error, Vars, { previous?: TodayResponse }>(() => ({
     mutationFn: async ({ taskId, done }) => {
-      if (done) await api.tasks.complete(taskId)
-      else await api.tasks.undo(taskId)
+      if (done) return api.tasks.complete(taskId)
+      await api.tasks.undo(taskId)
+      return null
     },
     onMutate: async ({ taskId, done }) => {
       await client.cancelQueries({ queryKey: keys.today })
@@ -100,5 +102,15 @@ const withTaskToggled = (today: TodayResponse, taskId: string, done: boolean): T
       return { ...task, doneToday: done, periodDone: task.periodDone + (done ? 1 : -1) }
     }),
   }))
-  return { ...today, goals, xpToday: today.xpToday + xpDelta }
+  // The first tick of the day makes it active and extends the streak; undoing
+  // the last one reverts that. The refetch afterwards has the final word.
+  const activeNow = goals.some((g) => g.tasks.some((t) => t.doneToday))
+  const wasActive = today.streak.today === 'active'
+  const streak =
+    activeNow === wasActive
+      ? today.streak
+      : activeNow
+        ? { ...today.streak, today: 'active' as const, current: today.streak.current + 1, longest: Math.max(today.streak.longest, today.streak.current + 1) }
+        : { ...today.streak, today: 'pending' as const, current: Math.max(0, today.streak.current - 1) }
+  return { ...today, goals, streak, xpToday: today.xpToday + xpDelta }
 }

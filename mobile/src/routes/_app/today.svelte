@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { p } from 'sv-router/generated';
 	import { todayQuery, useToggleTask } from '$lib/api/queries';
+	import Candle from '$lib/components/app/Candle.svelte';
+	import LevelUp from '$lib/components/app/LevelUp.svelte';
 	import LoadState from '$lib/components/app/LoadState.svelte';
 	import QuoteText from '$lib/components/app/QuoteText.svelte';
 	import StatStrip from '$lib/components/app/StatStrip.svelte';
 	import TaskRow from '$lib/components/app/TaskRow.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { haptic } from '$lib/feel/haptics';
+	import { play } from '$lib/feel/sound';
 	import { dayLabel, greeting, initial, percent } from '$lib/format';
 	import { quoteOfDay } from '$lib/quotes';
 
@@ -13,6 +17,41 @@
 	const toggle = useToggleTask();
 
 	const anyDone = $derived(today.data?.goals.some((g) => g.tasks.some((t) => t.doneToday)) ?? false);
+
+	type Goal = NonNullable<typeof today.data>['goals'][number];
+	type Task = Goal['tasks'][number];
+
+	// Celebration state, set only by taps (never by data refreshes).
+	let lit = $state(0); // the day's first tick lit the candle
+	let glowingGoal = $state<string | null>(null); // a goal's last task was just ticked
+	let levelUp = $state<number | null>(null);
+
+	function onToggle(goal: Goal, task: Task) {
+		const done = !task.doneToday;
+		const completesGoal = done && goal.tasks.length > 1 && goal.tasks.every((t) => t.id === task.id || t.doneToday);
+		if (!done) {
+			haptic('tap');
+			play('untick');
+		} else if (!anyDone) {
+			haptic('success');
+			play('first');
+			lit++;
+		} else if (completesGoal) {
+			haptic('success');
+			play('goal');
+		} else {
+			haptic('tap');
+			play('tick');
+		}
+		if (completesGoal) {
+			glowingGoal = goal.id;
+			setTimeout(() => glowingGoal === goal.id && (glowingGoal = null), 1200);
+		}
+		toggle.mutate(
+			{ taskId: task.id, done },
+			{ onSuccess: (result) => result?.levelUp && (levelUp = result.levelUp) },
+		);
+	}
 
 	// Goal meta: milestones, or the metric's current → target.
 	const goalMeta = (goal: NonNullable<typeof today.data>['goals'][number]) =>
@@ -42,8 +81,8 @@
 
 		<StatStrip
 			stats={[
-				{ label: 'XP today', value: String(data.xpToday), highlight: true },
-				{ label: 'Streak', value: String(data.streak.current), unit: ' d' },
+				{ label: 'XP today', value: String(data.xpToday), count: data.xpToday, highlight: true },
+				{ label: 'Streak', value: String(data.streak.current), unit: ' d', pulse: lit, adornment: candle },
 				{ label: 'Consistency', value: percent(data.consistency), unit: data.consistency === null ? '' : '%' },
 			]}
 		/>
@@ -58,10 +97,18 @@
 				<div class="font-mono text-xs text-muted-foreground">{goalMeta(goal)}</div>
 			</a>
 			{#if goal.tasks.length}
-				<div class="card-list flex flex-col overflow-hidden rounded-2xl bg-card">
-					{#each goal.tasks as task (task.id)}
-						<TaskRow {task} ontoggle={() => toggle.mutate({ taskId: task.id, done: !task.doneToday })} />
-					{/each}
+				<div class="relative">
+					<div class="card-list flex flex-col overflow-hidden rounded-2xl bg-card">
+						{#each goal.tasks as task (task.id)}
+							<TaskRow {task} ontoggle={() => onToggle(goal, task)} />
+						{/each}
+					</div>
+					{#if glowingGoal === goal.id}
+						<!-- Every task in this goal done: a warm light passes over the card. -->
+						<div aria-hidden="true" class="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+							<div class="absolute inset-0 animate-glow-sweep bg-linear-to-r from-transparent via-amber/15 to-transparent"></div>
+						</div>
+					{/if}
 				</div>
 			{:else}
 				<a href={p('/goals/:id', { params: { id: goal.id } })} class="rounded-2xl bg-card p-4 text-[15px] text-muted-foreground">
@@ -90,4 +137,12 @@
 	{/if}
 {:else}
 	<LoadState error={today.error} onretry={() => today.refetch()} />
+{/if}
+
+{#snippet candle()}
+	<Candle lit={today.data?.streak.today === 'active'} ignite={lit} />
+{/snippet}
+
+{#if levelUp}
+	<LevelUp level={levelUp} onclose={() => (levelUp = null)} />
 {/if}
