@@ -233,3 +233,34 @@ export const reflection = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.weekStart] })],
 )
+
+// ---------------------------------------------------------------------------
+// Push notifications
+// ---------------------------------------------------------------------------
+
+export const pushSubscription = sqliteTable(
+  'push_subscription',
+  {
+    endpoint: text('endpoint').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('push_subscription_user_idx').on(t.userId)],
+)
+
+// One row per daily reminder sent, so a redelivered queue message can't send twice.
+export const reminderLog = sqliteTable(
+  'reminder_log',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    day: day(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.day] })],
+)

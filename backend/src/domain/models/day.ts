@@ -45,3 +45,15 @@ export const dayAt = (instant: Date, timeZone: string, dayStartHour: number): Da
   const get = (type: string) => parts.find((p) => p.type === type)!.value
   return `${get('year')}-${get('month')}-${get('day')}`
 }
+
+// Minutes since local midnight (wall clock, ignoring day_start_hour) at an instant.
+export const minutesAt = (instant: Date, timeZone: string): number => {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(instant)
+  const get = (type: string) => Number(parts.find((p) => p.type === type)!.value)
+  return get('hour') * 60 + get('minute')
+}

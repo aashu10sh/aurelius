@@ -10,6 +10,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { authClient, authErrorMessage } from '$lib/auth';
 	import { dayLabel } from '$lib/format';
+	import { push } from '$lib/push.svelte';
 	import { signOut } from '$lib/session';
 
 	const me = meQuery();
@@ -73,6 +74,24 @@
 		if (ok) toast.success('Preferences saved');
 	}
 
+	// Notifications on this device.
+	let pushBusy = $state(false);
+	push.sync().catch(() => {});
+
+	async function togglePush() {
+		pushBusy = true;
+		try {
+			if (push.subscribed) await push.disable();
+			else if (await push.enable()) toast.success('Notifications on');
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Could not change notifications');
+		} finally {
+			pushBusy = false;
+		}
+	}
+
+	const sendTest = useAction(() => api.push.test());
+
 	async function leave() {
 		await signOut();
 		navigate('/welcome');
@@ -108,6 +127,35 @@
 		</div>
 		<Button type="submit" variant="secondary" size="block" disabled={save.isPending}>Save preferences</Button>
 	</form>
+
+	<section class="flex flex-col gap-3">
+		<h2 class="m-0 text-[17px] font-semibold">Notifications</h2>
+		{#if push.availability === 'install'}
+			<p class="m-0 rounded-2xl bg-card p-4 text-[15px] text-muted-foreground">On iPhone and iPad, notifications only work in the installed app. Add Aurelius to your Home Screen, open it from there, and turn them on here.</p>
+		{:else if push.availability === 'unsupported'}
+			<p class="m-0 rounded-2xl bg-card p-4 text-[15px] text-muted-foreground">This browser can’t receive notifications.</p>
+		{:else}
+			<div class="card-list flex flex-col rounded-2xl bg-card px-4">
+				<div class="flex min-h-14 items-center justify-between gap-3">
+					<span class="text-[15px]">Reminders on this device</span>
+					<Button size="sm" variant={push.subscribed ? 'ghost' : 'secondary'} class={push.subscribed ? 'text-muted-foreground' : ''} disabled={pushBusy || (!push.subscribed && push.permission === 'denied')} onclick={togglePush}>
+						{push.subscribed ? 'Turn off' : 'Turn on'}
+					</Button>
+				</div>
+				{#if push.subscribed}
+					<div class="flex min-h-14 items-center justify-between gap-3">
+						<span class="text-[15px]">Check it works</span>
+						<Button size="sm" variant="ghost" disabled={sendTest.isPending} onclick={() => sendTest.mutate(undefined)}>Send a test</Button>
+					</div>
+				{/if}
+			</div>
+			{#if push.permission === 'denied' && !push.subscribed}
+				<p class="m-0 text-sm text-muted-foreground">Notifications are blocked for this site. Allow them in your browser’s site settings, then turn them on here.</p>
+			{:else}
+				<p class="m-0 text-sm text-muted-foreground">At your daily reminder time, only if nothing’s ticked yet. On Sundays, a nudge to reflect on your week.</p>
+			{/if}
+		{/if}
+	</section>
 
 	<section class="flex flex-col gap-3">
 		<h2 class="m-0 text-[17px] font-semibold">Sign-in methods</h2>

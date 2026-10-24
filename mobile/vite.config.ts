@@ -32,6 +32,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Push and notification-click handlers live in public/push-sw.js.
+        importScripts: ['push-sw.js'],
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],

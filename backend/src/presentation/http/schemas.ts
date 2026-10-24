@@ -96,3 +96,10 @@ export const reflectionBody = z.object({
   }),
   goalRatings: z.record(z.string(), z.object({ rating: z.number().int(), note: z.string().max(500).optional() })),
 })
+
+export const pushSubscriptionBody = z.object({
+  endpoint: z.string().max(2000),
+  keys: z.object({ p256dh: z.string().max(200), auth: z.string().max(100) }),
+})
+
+export const pushEndpointBody = z.object({ endpoint: z.string().max(2000) })

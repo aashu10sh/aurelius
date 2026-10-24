@@ -42,6 +42,8 @@ export type MetricResponse = Json<MetricView>
 export type JournalResponse = Json<{ entries: JournalEntry[]; reflections: Reflection[] }>
 export type JournalEntryResponse = Json<JournalEntry>
 export type ReflectionResponse = Json<{ reflection: Reflection; firstThisWeek: boolean }>
+export type PushKeyResponse = { publicKey: string }
+export type PushTestResponse = { sent: number; failed: number }
 
 // Requests
 export type CreateGoalRequest = z.input<typeof schemas.createGoalBody>
@@ -54,6 +56,7 @@ export type SetMetricRequest = z.input<typeof schemas.setMetricBody>
 export type PreferencesRequest = z.input<typeof schemas.preferencesBody>
 export type JournalRequest = z.input<typeof schemas.journalBody>
 export type ReflectionRequest = z.input<typeof schemas.reflectionBody>
+export type PushSubscriptionRequest = z.input<typeof schemas.pushSubscriptionBody>
 
 export type { DayStatus } from '../../domain/rules/streak'
 export type { Cadence, CadenceType, Effort } from '../../domain/models/task'

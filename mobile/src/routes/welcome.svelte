@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { p } from 'sv-router/generated';
+	import InstallCard from '$lib/components/app/InstallCard.svelte';
 	import Logo from '$lib/components/app/Logo.svelte';
 	import QuoteText from '$lib/components/app/QuoteText.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -15,6 +16,8 @@
 	</div>
 
 	<QuoteText {quote} large caption />
+
+	<InstallCard />
 
 	<div class="flex flex-col gap-2">
 		<Button href={p('/sign-up')} size="block">Begin</Button>

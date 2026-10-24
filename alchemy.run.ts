@@ -35,19 +35,28 @@ const observability = {
 // Generated once and kept in state, so sessions survive redeploys.
 export const AuthSecret = Alchemy.Random("AuthSecret");
 
-// Hono API: a plain `export default app` fetch handler, bundled by Alchemy.
+// Daily reminders: the API's cron queues one job per due user, and the same
+// Worker consumes them to compose and send each Web Push notification.
+export const Reminders = Cloudflare.Queues.Queue("Reminders");
+
+// Hono API plus the reminder cron and queue handlers, bundled by Alchemy.
 export const Api = Cloudflare.Worker(
   "Api",
   Effect.gen(function* () {
     return {
       main: "./backend/src/index.ts",
       observability,
+      // Every 5 minutes; must match REMINDER_WINDOW_MINUTES in domain/rules/reminder.ts.
+      crons: ["*/5 * * * *"],
       env: {
         DB: yield* Db,
+        REMINDERS: yield* Reminders,
         BETTER_AUTH_SECRET: (yield* AuthSecret).text,
-        // Google OAuth client, from backend/.env (see the stack's `secrets`).
+        // Google OAuth client and VAPID key pair, from backend/.env (see the stack's `secrets`).
         GOOGLE_CLIENT_ID: yield* Config.NonEmptyString("GOOGLE_CLIENT_ID"),
         GOOGLE_CLIENT_SECRET: yield* Config.Redacted("GOOGLE_CLIENT_SECRET"),
+        VAPID_PRIVATE_KEY: yield* Config.Redacted("VAPID_PRIVATE_KEY"),
+        VAPID_SUBJECT: yield* Config.NonEmptyString("VAPID_SUBJECT"),
       },
     };
   }),
@@ -65,6 +74,11 @@ export default Alchemy.Stack(
   },
   Effect.gen(function* () {
     const api = yield* Api;
+    yield* Cloudflare.Queues.Consumer("RemindersConsumer", {
+      queueId: (yield* Reminders).queueId,
+      scriptName: api.workerName,
+      settings: { batchSize: 25, maxRetries: 3, maxWaitTimeMs: 5000 },
+    });
 
     // Svelte PWA (later wrapped with Capacitor). Its worker forwards /api/*
     // to the API over a service binding, so auth cookies stay first-party;

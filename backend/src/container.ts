@@ -1,4 +1,5 @@
 import { CalendarService } from './application/services/CalendarService'
+import { NotificationService } from './application/services/NotificationService'
 import { ScoreService } from './application/services/ScoreService'
 import { CompleteTaskUseCase } from './application/usecases/completions/CompleteTaskUseCase'
 import { UndoCompletionUseCase } from './application/usecases/completions/UndoCompletionUseCase'
@@ -9,6 +10,11 @@ import { SetGoalStatusUseCase } from './application/usecases/goals/SetGoalStatus
 import { UpdateGoalUseCase } from './application/usecases/goals/UpdateGoalUseCase'
 import { ListJournalUseCase } from './application/usecases/journal/ListJournalUseCase'
 import { WriteJournalEntryUseCase } from './application/usecases/journal/WriteJournalEntryUseCase'
+import { ScheduleRemindersUseCase } from './application/usecases/notifications/ScheduleRemindersUseCase'
+import { SendReminderUseCase } from './application/usecases/notifications/SendReminderUseCase'
+import { SendTestNotificationUseCase } from './application/usecases/notifications/SendTestNotificationUseCase'
+import { SubscribePushUseCase } from './application/usecases/notifications/SubscribePushUseCase'
+import { UnsubscribePushUseCase } from './application/usecases/notifications/UnsubscribePushUseCase'
 import { LogMetricUseCase } from './application/usecases/metrics/LogMetricUseCase'
 import { SetMetricUseCase } from './application/usecases/metrics/SetMetricUseCase'
 import { AddMilestoneUseCase } from './application/usecases/milestones/AddMilestoneUseCase'
@@ -29,12 +35,16 @@ import type { Env } from './env'
 import { BetterAuthSessionService } from './infrastructure/auth/BetterAuthSessionService'
 import { createAuth } from './infrastructure/auth/betterAuth'
 import { createDb } from './infrastructure/db/client'
+import { vapidPublicKey, WebPushSender } from './infrastructure/push/WebPushSender'
+import { CloudflareReminderQueue } from './infrastructure/queue/CloudflareReminderQueue'
 import { D1CompletionRepository } from './infrastructure/repositories/D1CompletionRepository'
 import { D1GoalRepository } from './infrastructure/repositories/D1GoalRepository'
 import { D1JournalRepository } from './infrastructure/repositories/D1JournalRepository'
 import { D1MetricRepository } from './infrastructure/repositories/D1MetricRepository'
 import { D1MilestoneRepository } from './infrastructure/repositories/D1MilestoneRepository'
+import { D1PushSubscriptionRepository } from './infrastructure/repositories/D1PushSubscriptionRepository'
 import { D1ReflectionRepository } from './infrastructure/repositories/D1ReflectionRepository'
+import { D1ReminderLogRepository } from './infrastructure/repositories/D1ReminderLogRepository'
 import { D1RestDayRepository } from './infrastructure/repositories/D1RestDayRepository'
 import { D1TaskRepository } from './infrastructure/repositories/D1TaskRepository'
 import { D1UserRepository } from './infrastructure/repositories/D1UserRepository'
@@ -42,13 +52,12 @@ import { SystemClock, UuidGenerator } from './infrastructure/system'
 import type { AppContainer } from './presentation/http/container'
 
 // Composition root: the only place that knows concrete implementations.
-// Everything is cheap to construct, so it is built per request.
-export const makeContainer = (env: Env): AppContainer => {
+// Everything is cheap to construct, so it is built per request (or per
+// cron tick / queue batch).
+
+// Repositories and services shared by the HTTP API and the background jobs.
+const makeCore = (env: Env) => {
   const db = createDb(env.DB)
-  const auth = createAuth(db, {
-    secret: env.BETTER_AUTH_SECRET,
-    google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET },
-  })
   const clock = new SystemClock()
   const ids = new UuidGenerator()
 
@@ -65,9 +74,42 @@ export const makeContainer = (env: Env): AppContainer => {
   const calendar = new CalendarService(clock)
   const score = new ScoreService(goals, tasks, completions, milestones, reflections, restDays, calendar)
 
+  const pushSubscriptions = new D1PushSubscriptionRepository(db)
+  const notifications = new NotificationService(pushSubscriptions, new WebPushSender(env.VAPID_PRIVATE_KEY, env.VAPID_SUBJECT))
+
+  return {
+    db,
+    clock,
+    ids,
+    users,
+    goals,
+    tasks,
+    completions,
+    milestones,
+    metrics,
+    restDays,
+    journal,
+    reflections,
+    calendar,
+    score,
+    pushSubscriptions,
+    notifications,
+  }
+}
+
+export const makeContainer = (env: Env): AppContainer => {
+  const { db, clock, ids, users, goals, tasks, completions, milestones, metrics, restDays, journal, reflections, calendar, score, pushSubscriptions, notifications } =
+    makeCore(env)
+  const auth = createAuth(db, {
+    secret: env.BETTER_AUTH_SECRET,
+    google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET },
+  })
+
   return {
     session: new BetterAuthSessionService(auth),
     handleAuth: (request) => auth.handler(request),
+    // Lazy, so a missing or bad key only breaks push, not the whole API.
+    pushPublicKey: () => vapidPublicKey(env.VAPID_PRIVATE_KEY),
     useCases: {
       getMe: new GetMeUseCase(users),
       updatePreferences: new UpdatePreferencesUseCase(users),
@@ -94,6 +136,28 @@ export const makeContainer = (env: Env): AppContainer => {
       listJournal: new ListJournalUseCase(journal, reflections),
       getWeek: new GetWeekUseCase(users, goals, completions, reflections, score, calendar),
       submitReflection: new SubmitReflectionUseCase(users, goals, reflections, calendar),
+      subscribePush: new SubscribePushUseCase(users, pushSubscriptions, clock),
+      unsubscribePush: new UnsubscribePushUseCase(pushSubscriptions),
+      sendTestNotification: new SendTestNotificationUseCase(notifications),
     },
+  }
+}
+
+// Cron and queue handlers (src/index.ts).
+export const makeJobs = (env: Env) => {
+  const { db, users, goals, tasks, completions, reflections, calendar, score, pushSubscriptions, notifications } = makeCore(env)
+  return {
+    scheduleReminders: new ScheduleRemindersUseCase(users, pushSubscriptions, new CloudflareReminderQueue(env.REMINDERS), calendar),
+    sendReminder: new SendReminderUseCase(
+      users,
+      goals,
+      tasks,
+      completions,
+      reflections,
+      new D1ReminderLogRepository(db),
+      score,
+      notifications,
+      calendar,
+    ),
   }
 }

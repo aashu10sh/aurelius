@@ -1,11 +1,14 @@
 import type { IClock } from '../src/application/ports/IClock'
 import type { IIdGenerator } from '../src/application/ports/IIdGenerator'
+import type { IPushSender, PushResult } from '../src/application/ports/IPushSender'
+import type { IReminderQueue, ReminderJob } from '../src/application/ports/IReminderQueue'
 import type { Completion } from '../src/domain/models/completion'
 import type { Day } from '../src/domain/models/day'
 import type { Goal, GoalStatus } from '../src/domain/models/goal'
 import type { JournalEntry, Reflection } from '../src/domain/models/journal'
 import type { Metric, MetricLog } from '../src/domain/models/metric'
 import type { Milestone } from '../src/domain/models/milestone'
+import type { Notification, PushSubscription } from '../src/domain/models/push'
 import type { Task } from '../src/domain/models/task'
 import type { User, UserPreferences } from '../src/domain/models/user'
 import type { ICompletionRepository } from '../src/domain/repositories/ICompletionRepository'
@@ -13,7 +16,9 @@ import type { IGoalRepository } from '../src/domain/repositories/IGoalRepository
 import type { IJournalRepository } from '../src/domain/repositories/IJournalRepository'
 import type { IMetricRepository } from '../src/domain/repositories/IMetricRepository'
 import type { IMilestoneRepository } from '../src/domain/repositories/IMilestoneRepository'
+import type { IPushSubscriptionRepository } from '../src/domain/repositories/IPushSubscriptionRepository'
 import type { IReflectionRepository } from '../src/domain/repositories/IReflectionRepository'
+import type { IReminderLogRepository } from '../src/domain/repositories/IReminderLogRepository'
 import type { IRestDayRepository } from '../src/domain/repositories/IRestDayRepository'
 import type { ITaskRepository } from '../src/domain/repositories/ITaskRepository'
 import type { IUserRepository } from '../src/domain/repositories/IUserRepository'
@@ -38,6 +43,9 @@ export class InMemoryUserRepository implements IUserRepository {
   constructor(public rows: User[] = []) {}
   async findById(id: string) {
     return this.rows.find((u) => u.id === id) ?? null
+  }
+  async findByIds(ids: readonly string[]) {
+    return this.rows.filter((u) => ids.includes(u.id))
   }
   async updatePreferences(id: string, preferences: UserPreferences) {
     const user = { ...(await this.findById(id))!, ...preferences }
@@ -195,5 +203,55 @@ export class InMemoryReflectionRepository implements IReflectionRepository {
       ...this.rows.filter((r) => !(r.userId === reflection.userId && r.weekStart === reflection.weekStart)),
       reflection,
     ]
+  }
+}
+
+export class InMemoryPushSubscriptionRepository implements IPushSubscriptionRepository {
+  rows: PushSubscription[] = []
+  async save(subscription: PushSubscription) {
+    this.rows = [...this.rows.filter((s) => s.endpoint !== subscription.endpoint), subscription]
+  }
+  async remove(userId: string, endpoint: string) {
+    this.rows = this.rows.filter((s) => !(s.userId === userId && s.endpoint === endpoint))
+  }
+  async removeByEndpoint(endpoint: string) {
+    this.rows = this.rows.filter((s) => s.endpoint !== endpoint)
+  }
+  async listByUser(userId: string) {
+    return this.rows.filter((s) => s.userId === userId)
+  }
+  async listUserIds() {
+    return [...new Set(this.rows.map((s) => s.userId))]
+  }
+}
+
+export class InMemoryReminderLogRepository implements IReminderLogRepository {
+  rows = new Set<string>()
+  async claim(userId: string, day: Day) {
+    const key = `${userId}:${day}`
+    if (this.rows.has(key)) return false
+    this.rows.add(key)
+    return true
+  }
+  async release(userId: string, day: Day) {
+    this.rows.delete(`${userId}:${day}`)
+  }
+}
+
+// Records what was sent; `results` overrides the outcome per endpoint.
+export class FakePushSender implements IPushSender {
+  sent: { endpoint: string; notification: Notification }[] = []
+  results = new Map<string, PushResult>()
+  async send(subscription: PushSubscription, notification: Notification) {
+    const result = this.results.get(subscription.endpoint) ?? 'sent'
+    if (result === 'sent') this.sent.push({ endpoint: subscription.endpoint, notification })
+    return result
+  }
+}
+
+export class FakeReminderQueue implements IReminderQueue {
+  jobs: ReminderJob[] = []
+  async enqueue(jobs: readonly ReminderJob[]) {
+    this.jobs.push(...jobs)
   }
 }

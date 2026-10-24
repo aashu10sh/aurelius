@@ -1,5 +1,6 @@
 import type { ISessionService } from '../src/application/ports/ISessionService'
 import { CalendarService } from '../src/application/services/CalendarService'
+import { NotificationService } from '../src/application/services/NotificationService'
 import { ScoreService } from '../src/application/services/ScoreService'
 import { CompleteTaskUseCase } from '../src/application/usecases/completions/CompleteTaskUseCase'
 import { UndoCompletionUseCase } from '../src/application/usecases/completions/UndoCompletionUseCase'
@@ -10,6 +11,9 @@ import { SetGoalStatusUseCase } from '../src/application/usecases/goals/SetGoalS
 import { UpdateGoalUseCase } from '../src/application/usecases/goals/UpdateGoalUseCase'
 import { ListJournalUseCase } from '../src/application/usecases/journal/ListJournalUseCase'
 import { WriteJournalEntryUseCase } from '../src/application/usecases/journal/WriteJournalEntryUseCase'
+import { SendTestNotificationUseCase } from '../src/application/usecases/notifications/SendTestNotificationUseCase'
+import { SubscribePushUseCase } from '../src/application/usecases/notifications/SubscribePushUseCase'
+import { UnsubscribePushUseCase } from '../src/application/usecases/notifications/UnsubscribePushUseCase'
 import { LogMetricUseCase } from '../src/application/usecases/metrics/LogMetricUseCase'
 import { SetMetricUseCase } from '../src/application/usecases/metrics/SetMetricUseCase'
 import { AddMilestoneUseCase } from '../src/application/usecases/milestones/AddMilestoneUseCase'
@@ -29,12 +33,14 @@ import { UpdatePreferencesUseCase } from '../src/application/usecases/user/Updat
 import type { User } from '../src/domain/models/user'
 import type { AppContainer } from '../src/presentation/http/container'
 import {
+  FakePushSender,
   FixedClock,
   InMemoryCompletionRepository,
   InMemoryGoalRepository,
   InMemoryJournalRepository,
   InMemoryMetricRepository,
   InMemoryMilestoneRepository,
+  InMemoryPushSubscriptionRepository,
   InMemoryReflectionRepository,
   InMemoryRestDayRepository,
   InMemoryTaskRepository,
@@ -64,10 +70,13 @@ export const makeFakeContainer = (users: User[], now: Date): AppContainer => {
   const reflections = new InMemoryReflectionRepository()
   const calendar = new CalendarService(clock)
   const score = new ScoreService(goals, tasks, completions, milestones, reflections, restDays, calendar)
+  const pushSubscriptions = new InMemoryPushSubscriptionRepository()
+  const notifications = new NotificationService(pushSubscriptions, new FakePushSender())
 
   return {
     session: new HeaderSessionService(),
     handleAuth: async () => new Response('auth', { status: 200 }),
+    pushPublicKey: () => 'test-public-key',
     useCases: {
       getMe: new GetMeUseCase(userRepo),
       updatePreferences: new UpdatePreferencesUseCase(userRepo),
@@ -94,6 +103,9 @@ export const makeFakeContainer = (users: User[], now: Date): AppContainer => {
       listJournal: new ListJournalUseCase(journal, reflections),
       getWeek: new GetWeekUseCase(userRepo, goals, completions, reflections, score, calendar),
       submitReflection: new SubmitReflectionUseCase(userRepo, goals, reflections, calendar),
+      subscribePush: new SubscribePushUseCase(userRepo, pushSubscriptions, clock),
+      unsubscribePush: new UnsubscribePushUseCase(pushSubscriptions),
+      sendTestNotification: new SendTestNotificationUseCase(notifications),
     },
   }
 }

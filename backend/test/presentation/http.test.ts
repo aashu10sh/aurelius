@@ -76,4 +76,17 @@ describe('HTTP API', () => {
   test('unknown ids are 404', async () => {
     expect((await call('GET', '/goals/nope')).status).toBe(404)
   })
+
+  test('push: key, subscribe, test send, unsubscribe', async () => {
+    expect(await (await call('GET', '/push/key')).json()).toEqual({ publicKey: 'test-public-key' })
+    expect((await call('POST', '/push/test')).status).toBe(422) // nothing subscribed yet
+
+    const sub = { endpoint: 'https://push.example.com/abc', keys: { p256dh: 'p', auth: 'a' } }
+    expect((await call('PUT', '/push/subscription', { ...sub, endpoint: 'http://insecure.example' })).status).toBe(422)
+    expect((await call('PUT', '/push/subscription', sub)).status).toBe(204)
+    expect(await (await call('POST', '/push/test')).json()).toEqual({ sent: 1, failed: 0 })
+
+    expect((await call('DELETE', '/push/subscription', { endpoint: sub.endpoint })).status).toBe(204)
+    expect((await call('POST', '/push/test')).status).toBe(422)
+  })
 })

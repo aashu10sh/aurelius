@@ -5,7 +5,7 @@
 	import Field from './Field.svelte';
 	import TaskEditor, { blankTask, type TaskDraft, weeklyXp } from './TaskEditor.svelte';
 
-	// Goal + its first small tasks (+ optional milestones and metric) in one form.
+	// Goal + its first small task (+ optional milestones and metric) in one form.
 	let {
 		submitLabel,
 		pending = false,
@@ -16,7 +16,7 @@
 	let title = $state('');
 	let why = $state('');
 	let targetDate = $state('');
-	let tasks = $state<TaskDraft[]>([blankTask(), { ...blankTask(), effort: 'light', cadenceType: 'daily', count: 1 }]);
+	let tasks = $state<TaskDraft[]>([blankTask()]);
 	let milestones = $state<string[]>([]);
 	let withMetric = $state(false);
 	let unit = $state('');
@@ -63,7 +63,7 @@
 			<h2 class="m-0 text-[17px] font-semibold">Small tasks</h2>
 			<div class="font-mono text-xs text-muted-foreground">PLAN {plan} XP / WK</div>
 		</div>
-		<p class="m-0 text-sm text-muted-foreground">Any of these counts toward the goal. Add an easy one for tired days.</p>
+		<p class="m-0 text-sm text-muted-foreground">One is enough to start. You can add more later, like an easy one for tired days.</p>
 		{#each tasks as _, i (i)}
 			<TaskEditor bind:task={tasks[i]!} index={i} onremove={tasks.length > 1 ? () => tasks.splice(i, 1) : undefined} />
 		{/each}

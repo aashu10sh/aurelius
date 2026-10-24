@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import { addDays, dayAt, daysBetween, isDay, weekStart } from '../../src/domain/models/day'
+import { addDays, dayAt, daysBetween, isDay, minutesAt, weekStart } from '../../src/domain/models/day'
 import type { Task } from '../../src/domain/models/task'
 import { plannedCount } from '../../src/domain/rules/cadence'
 import { goalConsistency, overallConsistency } from '../../src/domain/rules/consistency'
+import { reflectionOpensOn, reflectionWeek } from '../../src/domain/rules/reflection'
+import { composeReminder, isReminderDue } from '../../src/domain/rules/reminder'
 import { assertCanPlanRestDay } from '../../src/domain/rules/restDay'
 import { computeStreak } from '../../src/domain/rules/streak'
 import { levelFor, totalXp } from '../../src/domain/rules/xp'
@@ -158,5 +160,61 @@ describe('rest days', () => {
     expect(() => assertCanPlanRestDay('2026-10-22', '2026-10-22', [])).toThrow('in advance')
     expect(() => assertCanPlanRestDay('2026-10-25', '2026-10-22', ['2026-10-24'])).toThrow('per week')
     expect(() => assertCanPlanRestDay('2026-10-26', '2026-10-22', ['2026-10-24'])).not.toThrow()
+  })
+})
+
+describe('reflection window', () => {
+  test('opens Sunday and stays open Monday for the week just ended', () => {
+    expect(reflectionWeek('2026-10-25')).toBe('2026-10-19') // Sunday
+    expect(reflectionWeek('2026-10-26')).toBe('2026-10-19') // Monday after
+    expect(reflectionWeek('2026-10-27')).toBeNull() // Tuesday
+    expect(reflectionWeek('2026-10-24')).toBeNull() // Saturday
+    expect(reflectionOpensOn('2026-10-22')).toBe('2026-10-25')
+  })
+})
+
+describe('reminders', () => {
+  test('due on the one 5-minute tick that covers the reminder time', () => {
+    const at = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3))
+    expect(isReminderDue('20:00', at('20:00'))).toBe(true)
+    expect(isReminderDue('20:03', at('20:05'))).toBe(true)
+    expect(isReminderDue('20:03', at('20:00'))).toBe(false)
+    expect(isReminderDue('20:00', at('20:05'))).toBe(false)
+    expect(isReminderDue('23:58', at('00:00'))).toBe(true) // across midnight
+  })
+
+  test('local minutes follow the time zone', () => {
+    expect(minutesAt(new Date('2026-10-22T14:15:00Z'), 'Asia/Kathmandu')).toBe(20 * 60) // +05:45
+  })
+
+  const base = {
+    doneToday: 0,
+    tasks: [
+      { title: 'System design', effort: 'heavy' as const },
+      { title: 'Tech podcast', effort: 'light' as const },
+    ],
+    streak: 4,
+    yesterday: 'active' as const,
+    reflection: null,
+  }
+
+  test('nothing ticked: suggests the easiest task', () => {
+    expect(composeReminder(base)).toMatchObject({ title: 'Day 5 is waiting', url: '/today' })
+    expect(composeReminder(base)!.body).toContain('“Tech podcast”')
+  })
+
+  test('after a grace day: never miss twice, plus the reflection on Sundays', () => {
+    const n = composeReminder({ ...base, yesterday: 'grace', reflection: 'open' })!
+    expect(n.title).toBe('Never miss twice')
+    expect(n.body).toContain('4-day streak')
+    expect(n.body).toContain('reflect on your week')
+  })
+
+  test('already ticked: only reflection days say anything', () => {
+    expect(composeReminder({ ...base, doneToday: 2 })).toBeNull()
+    expect(composeReminder({ ...base, doneToday: 2, reflection: 'last-chance' })).toMatchObject({
+      title: 'Last chance to reflect on last week',
+      url: '/journal/week',
+    })
   })
 })

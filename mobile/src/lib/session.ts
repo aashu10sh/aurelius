@@ -1,5 +1,6 @@
 import { queryClient } from './api/queries'
 import { authClient } from './auth'
+import { push } from './push.svelte'
 
 type Session = Awaited<ReturnType<typeof authClient.getSession>>['data']
 
@@ -17,6 +18,8 @@ export const refreshSession = () => {
 }
 
 export const signOut = async () => {
+  // Stop this device getting the signed-out user's reminders.
+  await push.disable().catch(() => {})
   await authClient.signOut()
   cached = Promise.resolve(null)
   queryClient.clear()

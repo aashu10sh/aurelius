@@ -7,6 +7,7 @@ import { journalRoutes, restDayRoutes } from './routes/journal'
 import { meRoutes } from './routes/me'
 import { milestoneRoutes } from './routes/milestones'
 import { overviewRoutes } from './routes/overview'
+import { pushRoutes } from './routes/push'
 import { taskRoutes } from './routes/tasks'
 
 // The HTTP API, mounted at /api (the PWA's worker forwards /api/* here on
@@ -26,6 +27,7 @@ export const createApp = <Bindings extends object>(makeContainer: (env: Bindings
     .route('/milestones', milestoneRoutes)
     .route('/journal', journalRoutes)
     .route('/rest-days', restDayRoutes)
+    .route('/push', pushRoutes)
 
   return new Hono<RootEnv<Bindings>>()
     .basePath('/api')

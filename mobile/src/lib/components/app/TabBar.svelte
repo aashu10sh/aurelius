@@ -12,7 +12,7 @@
 
 <nav
 	aria-label="Main"
-	class="grid shrink-0 grid-cols-4 border-t border-nav-border bg-background px-2 pb-[max(env(safe-area-inset-bottom),12px)]"
+	class="grid shrink-0 grid-cols-4 border-t border-nav-border bg-background px-2 pt-1.5 pb-[max(env(safe-area-inset-bottom),12px)]"
 >
 	{#each tabs as tab (tab.href)}
 		{@const active = tab.active()}

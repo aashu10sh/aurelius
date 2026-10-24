@@ -8,6 +8,9 @@ import type { SetGoalStatusUseCase } from '../../application/usecases/goals/SetG
 import type { UpdateGoalUseCase } from '../../application/usecases/goals/UpdateGoalUseCase'
 import type { ListJournalUseCase } from '../../application/usecases/journal/ListJournalUseCase'
 import type { WriteJournalEntryUseCase } from '../../application/usecases/journal/WriteJournalEntryUseCase'
+import type { SendTestNotificationUseCase } from '../../application/usecases/notifications/SendTestNotificationUseCase'
+import type { SubscribePushUseCase } from '../../application/usecases/notifications/SubscribePushUseCase'
+import type { UnsubscribePushUseCase } from '../../application/usecases/notifications/UnsubscribePushUseCase'
 import type { LogMetricUseCase } from '../../application/usecases/metrics/LogMetricUseCase'
 import type { SetMetricUseCase } from '../../application/usecases/metrics/SetMetricUseCase'
 import type { AddMilestoneUseCase } from '../../application/usecases/milestones/AddMilestoneUseCase'
@@ -31,6 +34,8 @@ export interface AppContainer {
   session: ISessionService
   // Sign-up, sign-in and friends are served by the auth provider as-is.
   handleAuth(request: Request): Promise<Response>
+  // VAPID public key (base64url) the browser subscribes with.
+  pushPublicKey(): string
   useCases: {
     getMe: GetMeUseCase
     updatePreferences: UpdatePreferencesUseCase
@@ -57,6 +62,9 @@ export interface AppContainer {
     listJournal: ListJournalUseCase
     getWeek: GetWeekUseCase
     submitReflection: SubmitReflectionUseCase
+    subscribePush: SubscribePushUseCase
+    unsubscribePush: UnsubscribePushUseCase
+    sendTestNotification: SendTestNotificationUseCase
   }
 }
 

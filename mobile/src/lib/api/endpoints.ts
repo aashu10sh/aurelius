@@ -13,6 +13,9 @@ import type {
   MetricResponse,
   MilestoneResponse,
   PreferencesRequest,
+  PushKeyResponse,
+  PushSubscriptionRequest,
+  PushTestResponse,
   ProgressResponse,
   ReflectionRequest,
   ReflectionResponse,
@@ -68,5 +71,11 @@ export const api = {
     list: () => request<string[]>('GET', '/rest-days'),
     plan: (day: string) => request<{ day: string }>('PUT', `/rest-days/${day}`),
     cancel: (day: string) => request<void>('DELETE', `/rest-days/${day}`),
+  },
+  push: {
+    key: () => request<PushKeyResponse>('GET', '/push/key'),
+    subscribe: (body: PushSubscriptionRequest) => request<void>('PUT', '/push/subscription', body),
+    unsubscribe: (endpoint: string) => request<void>('DELETE', '/push/subscription', { endpoint }),
+    test: () => request<PushTestResponse>('POST', '/push/test'),
   },
 }

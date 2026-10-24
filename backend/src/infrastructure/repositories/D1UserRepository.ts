@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { NotFoundError } from '../../domain/errors'
 import type { User, UserPreferences } from '../../domain/models/user'
 import type { IUserRepository } from '../../domain/repositories/IUserRepository'
@@ -24,6 +24,15 @@ export class D1UserRepository implements IUserRepository {
   async findById(id: string): Promise<User | null> {
     const [row] = await this.db.select().from(user).where(eq(user.id, id)).limit(1)
     return row ? toUser(row) : null
+  }
+
+  async findByIds(ids: readonly string[]): Promise<User[]> {
+    // D1 caps bound parameters per query at 100.
+    const rows = []
+    for (let i = 0; i < ids.length; i += 90) {
+      rows.push(...(await this.db.select().from(user).where(inArray(user.id, ids.slice(i, i + 90)))))
+    }
+    return rows.map(toUser)
   }
 
   async updatePreferences(id: string, preferences: UserPreferences): Promise<User> {

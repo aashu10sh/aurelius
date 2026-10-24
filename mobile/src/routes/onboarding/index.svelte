@@ -7,6 +7,7 @@
 	import Field from '$lib/components/app/Field.svelte';
 	import GoalForm from '$lib/components/app/GoalForm.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { push } from '$lib/push.svelte';
 
 	// Three cards explaining the system, then the first goal, then a reminder.
 	let step = $state(0);
@@ -20,6 +21,7 @@
 	const demoDone = new SvelteSet<string>();
 	const demoXp = $derived(demoTasks.filter((t) => demoDone.has(t.title)).reduce((s, t) => s + t.xp, 0));
 	let reminder = $state('20:00');
+	let notify = $state(true);
 	let error = $state('');
 
 	const createGoal = useAction((goal: CreateGoalRequest) => api.goals.create(goal), { quiet: true });
@@ -56,8 +58,10 @@
 		}
 	}
 
+	// Asking for notification permission must happen on this tap, not on load.
 	async function finish() {
 		await savePrefs.mutateAsync(reminder).catch(() => {});
+		if (notify && push.availability === 'ok') await push.enable().catch(() => {});
 		navigate('/today');
 	}
 </script>
@@ -162,6 +166,14 @@
 			<p class="m-0 text-base text-muted-foreground">One gentle reminder a day, only if nothing’s ticked yet.</p>
 		</div>
 		<div class="mt-8"><Field id="reminder" label="Daily reminder" type="time" bind:value={reminder} /></div>
+		{#if push.availability === 'ok'}
+			<label class="mt-6 flex min-h-11 items-center justify-between gap-4">
+				<span class="text-[15px]">Send it as a notification</span>
+				<input type="checkbox" bind:checked={notify} class="size-6 accent-[var(--primary)]" />
+			</label>
+		{:else if push.availability === 'install'}
+			<p class="mt-6 mb-0 text-sm text-muted-foreground">Install Aurelius to your Home Screen to get this as a notification. You can turn it on in Settings.</p>
+		{/if}
 		<div class="flex-1"></div>
 		<Button size="block" disabled={savePrefs.isPending} onclick={finish}>Start today</Button>
 	{/if}
