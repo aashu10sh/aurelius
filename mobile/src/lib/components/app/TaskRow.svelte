@@ -1,14 +1,13 @@
 <script lang="ts">
-	import type { TodayResponse } from 'backend/contract';
-	import { cadenceProgress } from '$lib/format';
-
-	type Task = TodayResponse['goals'][number]['tasks'][number];
-	let { task, ontoggle }: { task: Task; ontoggle: () => void } = $props();
+	// A tickable small task. Today and the onboarding demo share it, so new
+	// users meet the real tick before their first day.
+	let { title, xp, done, detail, ontoggle }: { title: string; xp: number; done: boolean; detail?: string; ontoggle: () => void } =
+		$props();
 
 	// Bumped on each tap that ticks the task: replays the burst. Data that
 	// arrives already ticked (load, refetch) only gets the quiet fill.
 	let burst = $state(0);
-	const celebrating = $derived(burst > 0 && task.doneToday);
+	const celebrating = $derived(burst > 0 && done);
 
 	// Six sparks around the circle.
 	const SPARKS = Array.from({ length: 6 }, (_, i) => {
@@ -17,7 +16,7 @@
 	});
 
 	function onclick() {
-		if (!task.doneToday) burst++;
+		if (!done) burst++;
 		ontoggle();
 	}
 </script>
@@ -25,14 +24,14 @@
 <button
 	type="button"
 	{onclick}
-	aria-pressed={task.doneToday}
+	aria-pressed={done}
 	class="group flex min-h-[60px] w-full items-center gap-3 bg-transparent px-4 py-3 text-left transition-colors active:bg-accent/40"
 >
 	<span class="relative flex size-6 shrink-0 items-center justify-center transition-transform duration-150 group-active:scale-90">
 		<span class="absolute inset-0 rounded-full border-[1.5px] border-faint"></span>
 		{#key burst}
 			<span
-				class="absolute inset-0 rounded-full bg-primary transition-[scale,opacity] duration-200 ease-(--ease-out-soft) {task.doneToday
+				class="absolute inset-0 rounded-full bg-primary transition-[scale,opacity] duration-200 ease-(--ease-out-soft) {done
 					? 'scale-100 opacity-100'
 					: 'scale-50 opacity-0'} {celebrating ? 'animate-check-pop' : ''}"
 			></span>
@@ -52,20 +51,20 @@
 				d="M5 12.5 10 17.5 19 7"
 				pathLength="1"
 				stroke-dasharray="1"
-				class="transition-[stroke-dashoffset] duration-200 ease-(--ease-out-soft) {task.doneToday ? 'delay-75' : ''}"
-				style:stroke-dashoffset={task.doneToday ? 0 : 1}
+				class="transition-[stroke-dashoffset] duration-200 ease-(--ease-out-soft) {done ? 'delay-75' : ''}"
+				style:stroke-dashoffset={done ? 0 : 1}
 			/>
 		</svg>
 	</span>
 	<span class="flex min-w-0 flex-1 flex-col gap-1">
-		<span class="text-[15px] font-medium">{task.title}</span>
-		<span class="font-mono text-xs text-muted-foreground">{cadenceProgress(task.cadence, task.periodDone)}</span>
+		<span class="text-[15px] font-medium">{title}</span>
+		{#if detail}<span class="font-mono text-xs text-muted-foreground">{detail}</span>{/if}
 	</span>
-	<span class="relative font-mono text-[13px] transition-colors duration-200 {task.doneToday ? 'text-amber-bright' : 'text-muted-foreground'}">
-		+{task.xp}
+	<span class="relative font-mono text-[13px] transition-colors duration-200 {done ? 'text-amber-bright' : 'text-muted-foreground'}">
+		+{xp}
 		{#key burst}
 			{#if celebrating}
-				<span aria-hidden="true" class="pointer-events-none absolute right-0 bottom-full animate-float-up font-medium text-amber-bright">+{task.xp}</span>
+				<span aria-hidden="true" class="pointer-events-none absolute right-0 bottom-full animate-float-up font-medium text-amber-bright">+{xp}</span>
 			{/if}
 		{/key}
 	</span>

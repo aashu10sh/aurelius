@@ -8,6 +8,9 @@
 	import RatingScale from '$lib/components/app/RatingScale.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import { haptic } from '$lib/feel/haptics';
+	import { play } from '$lib/feel/sound';
+	import { rise, stagger } from '$lib/feel/transitions';
 	import { dayLabel } from '$lib/format';
 
 	const week = weekQuery();
@@ -31,8 +34,12 @@
 
 	async function saveEntry(event: SubmitEvent) {
 		event.preventDefault();
+		haptic('tap');
 		const result = await write.mutateAsync({ mood: mood ?? null, body }).catch(() => null);
-		if (result) toast.success('Saved to your journal');
+		if (result) {
+			play('tick');
+			toast.success('Saved to your journal');
+		}
 	}
 </script>
 
@@ -57,8 +64,8 @@
 		<section class="flex flex-col gap-3">
 			<h2 class="m-0 text-[17px] font-semibold">Past entries</h2>
 			<div class="card-list flex flex-col rounded-2xl bg-card">
-				{#each journal.data.entries.filter((e) => e.day !== todayDay) as entry (entry.day)}
-					<article class="flex flex-col gap-1 p-4">
+				{#each journal.data.entries.filter((e) => e.day !== todayDay) as entry, i (entry.day)}
+					<article class="flex flex-col gap-1 p-4" in:rise|global={{ delay: stagger(i) }}>
 						<div class="flex justify-between">
 							<span class="eyebrow">{dayLabel(entry.day)}</span>
 							{#if entry.mood}<span class="font-mono text-xs text-amber" aria-label="Mood {entry.mood} of 5">{'●'.repeat(entry.mood)}{'○'.repeat(5 - entry.mood)}</span>{/if}
@@ -74,7 +81,12 @@
 
 	<!-- Weekly reflections live on their own page: past ones are always readable,
 	     a new one can only be written at the end of the week. -->
-	<Button href={p('/journal/week')} variant="secondary" size="block">
+	<Button
+		href={p('/journal/week')}
+		variant="secondary"
+		size="block"
+		class={w.canReflect && !w.reflection ? 'bg-ember/10 text-foreground shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--ember)_35%,transparent)]' : ''}
+	>
 		{#if w.canReflect && !w.reflection}Reflect on this week · <span class="font-mono font-medium">+20 XP</span>{:else}Weekly reflections{/if}
 	</Button>
 {:else}

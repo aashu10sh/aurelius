@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { GoalDetailResponse, GoalStatus } from 'backend/contract';
 	import { p, route } from 'sv-router/generated';
+	import { slide } from 'svelte/transition';
 	import { api } from '$lib/api/endpoints';
 	import { goalQuery, useAction } from '$lib/api/queries';
 	import LoadState from '$lib/components/app/LoadState.svelte';
@@ -9,6 +10,9 @@
 	import TaskSheet from '$lib/components/app/TaskSheet.svelte';
 	import TopBar from '$lib/components/app/TopBar.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { haptic } from '$lib/feel/haptics';
+	import { duration } from '$lib/feel/motion';
+	import { play } from '$lib/feel/sound';
 	import { cadenceShort, dateLabel, effortLabel, number, percent } from '$lib/format';
 
 	const id = $derived(route.params.id as string);
@@ -82,7 +86,7 @@
 				<h2 class="m-0 text-[17px] font-semibold">{m.currentValue} {m.unit}</h2>
 				<div class="font-mono text-xs text-muted-foreground">{m.startValue} → {m.targetValue} {m.unit}</div>
 			</div>
-			<div class="h-2 overflow-hidden rounded-full bg-track"><div class="h-full rounded-full bg-amber" style:width="{m.progress * 100}%"></div></div>
+			<div class="h-2 overflow-hidden rounded-full bg-track"><div class="h-full origin-left animate-grow-x rounded-full bg-amber transition-[width] duration-500 ease-(--ease-out-soft)" style:width="{m.progress * 100}%"></div></div>
 			<form class="flex gap-2" onsubmit={submitReading}>
 				<label class="sr-only" for="reading">New reading in {m.unit}</label>
 				<input id="reading" bind:value={reading} inputmode="decimal" placeholder="Today’s reading" class="h-11 min-w-0 flex-1 rounded-xl bg-card px-4 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring/50" />
@@ -103,15 +107,21 @@
 				<button
 					type="button"
 					aria-pressed={done}
-					onclick={() => toggleMilestone.mutate({ milestoneId: milestone.id, done: !done })}
-					class="flex min-h-[52px] w-full items-center gap-3 px-4 text-left"
+					onclick={() => {
+						haptic(done ? 'tap' : 'success');
+						play(done ? 'untick' : 'goal');
+						toggleMilestone.mutate({ milestoneId: milestone.id, done: !done });
+					}}
+					class="group flex min-h-[52px] w-full items-center gap-3 px-4 text-left"
+					transition:slide={{ duration: duration(220) }}
 				>
-					{#if done}
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="shrink-0 text-amber"><path d="M5 12.5 10 17.5 19 7" /></svg>
-					{:else}
-						<span class="m-px size-[18px] shrink-0 rounded border-[1.5px] border-faint"></span>
-					{/if}
-					<span class="text-[15px] {done ? 'text-muted-foreground' : ''}">{milestone.title}</span>
+					<span class="relative m-px flex size-[18px] shrink-0 items-center justify-center transition-transform duration-150 group-active:scale-90">
+						<span class="absolute inset-0 rounded border-[1.5px] transition-colors duration-200 {done ? 'border-transparent' : 'border-faint'}"></span>
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="absolute text-amber">
+							<path d="M5 12.5 10 17.5 19 7" pathLength="1" stroke-dasharray="1" class="transition-[stroke-dashoffset] duration-300 ease-(--ease-out-soft)" style:stroke-dashoffset={done ? 0 : 1} />
+						</svg>
+					</span>
+					<span class="text-[15px] transition-colors duration-200 {done ? 'text-muted-foreground' : ''}">{milestone.title}</span>
 				</button>
 			{/each}
 			<form class="flex items-center gap-2 px-4 py-2" onsubmit={submitMilestone}>
@@ -129,7 +139,7 @@
 		</div>
 		<div class="card-list flex flex-col overflow-hidden rounded-2xl bg-card">
 			{#each g.tasks as task (task.id)}
-				<button type="button" onclick={() => openSheet(task)} class="flex min-h-[52px] w-full items-center gap-3 px-4 text-left">
+				<button type="button" onclick={() => openSheet(task)} class="flex min-h-[52px] w-full items-center gap-3 px-4 text-left" transition:slide={{ duration: duration(220) }}>
 					<span class="flex-1 text-[15px]">{task.title}</span>
 					<span class="font-mono text-xs text-muted-foreground">{cadenceShort(task.cadence)}</span>
 					<span class="w-[52px] rounded-lg bg-chip py-1 text-center font-mono text-[11px] text-amber-bright">{effortLabel[task.effort]}</span>
@@ -155,7 +165,7 @@
 			>
 				{#each g.ratings as r, i (r.weekStart)}
 					<div class="flex flex-col items-center gap-2">
-						<div class="w-full rounded-md {i === latest ? 'bg-amber' : 'bg-heat-2'}" style:height="{r.rating * 10}px"></div>
+						<div class="w-full origin-bottom animate-grow-up rounded-md {i === latest ? 'bg-amber' : 'bg-heat-2'}" style:animation-delay="{100 + i * 45}ms" style:height="{r.rating * 10}px"></div>
 						<div class="font-mono text-[11px] text-muted-foreground">{r.weekStart.slice(5).replace('-', '/')}</div>
 					</div>
 				{/each}

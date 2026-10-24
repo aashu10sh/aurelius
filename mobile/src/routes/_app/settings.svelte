@@ -85,7 +85,11 @@
 		pushBusy = true;
 		try {
 			if (push.subscribed) await push.disable();
-			else if (await push.enable()) toast.success('Notifications on');
+			else if (await push.enable()) {
+				haptic('success');
+				play('tick');
+				toast.success('Notifications on');
+			}
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Could not change notifications');
 		} finally {

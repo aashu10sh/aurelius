@@ -10,6 +10,6 @@
 	style:grid-template-columns="repeat({total}, minmax(0, 1fr))"
 >
 	{#each { length: total }, i}
-		<span class="h-1.5 rounded-full {i < done ? 'bg-amber' : 'bg-track'}"></span>
+		<span class="h-1.5 rounded-full transition-colors duration-300 {i < done ? 'bg-amber' : 'bg-track'}"></span>
 	{/each}
 </div>

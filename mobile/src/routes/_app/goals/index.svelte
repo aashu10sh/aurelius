@@ -6,6 +6,7 @@
 	import Segmented from '$lib/components/app/Segmented.svelte';
 	import SegmentBar from '$lib/components/app/SegmentBar.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { rise, stagger } from '$lib/feel/transitions';
 	import { percent } from '$lib/format';
 
 	let filter = $state<'active' | 'done'>('active');
@@ -31,8 +32,12 @@
 
 {#if goals.data}
 	<div class="-mt-2 flex flex-col gap-3">
-		{#each goals.data as goal (goal.id)}
-			<a href={p('/goals/:id', { params: { id: goal.id } })} class="flex flex-col gap-4 rounded-2xl bg-card p-4 text-foreground">
+		{#each goals.data as goal, i (goal.id)}
+			<a
+				href={p('/goals/:id', { params: { id: goal.id } })}
+				class="flex flex-col gap-4 rounded-2xl bg-card p-4 text-foreground transition-transform duration-150 active:scale-[0.98]"
+				in:rise|global={{ delay: stagger(i, 45) }}
+			>
 				<div class="flex items-start justify-between gap-4">
 					<div class="flex min-w-0 flex-col gap-1">
 						<h2 class="m-0 text-[17px] font-semibold">{goal.title}</h2>
@@ -51,7 +56,7 @@
 				</div>
 				{#if goal.metric}
 					<div class="flex flex-col gap-2">
-						<div class="h-1.5 overflow-hidden rounded-full bg-track"><div class="h-full rounded-full bg-amber" style:width="{goal.metric.progress * 100}%"></div></div>
+						<div class="h-1.5 overflow-hidden rounded-full bg-track"><div class="h-full origin-left animate-grow-x rounded-full bg-amber" style:width="{goal.metric.progress * 100}%"></div></div>
 						<div class="eyebrow">{goal.metric.currentValue} {goal.metric.unit} → {goal.metric.targetValue}</div>
 					</div>
 				{:else if goal.milestones.total}

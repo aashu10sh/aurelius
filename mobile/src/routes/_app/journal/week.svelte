@@ -6,13 +6,14 @@
 	import { journalQuery, useAction, weekQuery } from '$lib/api/queries';
 	import { cellClass } from '$lib/components/app/Heatmap.svelte';
 	import LoadState from '$lib/components/app/LoadState.svelte';
-	import QuoteText from '$lib/components/app/QuoteText.svelte';
 	import RatingScale from '$lib/components/app/RatingScale.svelte';
 	import TopBar from '$lib/components/app/TopBar.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import { haptic } from '$lib/feel/haptics';
+	import { play } from '$lib/feel/sound';
+	import { rise, stagger } from '$lib/feel/transitions';
 	import { dayLabel, isoWeek, percent, weekLabel } from '$lib/format';
-	import { quoteOfDay } from '$lib/quotes';
 
 	const week = weekQuery();
 	const journal = journalQuery();
@@ -47,7 +48,9 @@
 		const goalRatings = Object.fromEntries(
 			Object.entries(ratings).flatMap(([id, rating]) => (rating ? [[id, { rating }]] : [])),
 		);
+		haptic('tap');
 		const result = await reflect.mutateAsync({ answers, goalRatings }).catch(() => null);
+		if (result) play(result.firstThisWeek ? 'goal' : 'tick');
 		if (result) toast.success(result.firstThisWeek ? 'Reflection saved · +20 XP' : 'Reflection updated');
 	}
 
@@ -62,7 +65,6 @@
 		<div class="flex flex-col gap-2">
 			<div class="eyebrow">Week {isoWeek(w.weekStart)} · {weekLabel(w.weekStart)}</div>
 			<h1 class="m-0 text-[28px] leading-[1.15] font-semibold tracking-tight">Weekly reflection</h1>
-			<QuoteText quote={quoteOfDay(w.weekStart, 3)} />
 		</div>
 
 		<div class="flex items-center gap-4 rounded-2xl bg-card p-4">
@@ -121,8 +123,8 @@
 		<section class="flex flex-col gap-3">
 			<h2 class="m-0 text-[17px] font-semibold">Past reflections</h2>
 			<div class="card-list flex flex-col rounded-2xl bg-card">
-				{#each past as r (r.weekStart)}
-					<article class="flex flex-col gap-2 p-4">
+				{#each past as r, i (r.weekStart)}
+					<article class="flex flex-col gap-2 p-4" in:rise|global={{ delay: stagger(i) }}>
 						<span class="eyebrow">Week {isoWeek(r.weekStart)} · {weekLabel(r.weekStart)}</span>
 						{#each questions as q (q.id)}
 							{#if r.answers[q.id]}

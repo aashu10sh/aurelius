@@ -26,7 +26,7 @@ XP is **derived** from stored facts (completions, ticked milestones, completed g
 
 Welcome (with an **install the app** card, since Aurelius is meant to be used as an installed PWA), sign in and sign up → onboarding (how it works, first goal, reminder) → four tabs: **Today**, **Goals** (list and detail), **Progress** (level, 26-week heatmap, XP per week), and **Journal** (today's entry and past entries; a button at the bottom opens the **weekly reflections** page, `/journal/week`, where past reflections can be read any day and a new one written on Sunday or Monday). **Settings** sits behind the avatar on Today.
 
-The visual design is "Candlelight amber": warm near-black, amber accents, Geist with Geist Mono for numbers, and Newsreader italic for quotes. It was designed on a Claude Design canvas first.
+The visual design is "Candlelight amber": warm near-black, amber accents, and Geist with Geist Mono for numbers. It was designed on a Claude Design canvas first.
 
 ---
 
@@ -186,6 +186,7 @@ Both Workers ship with Cloudflare **observability** enabled (persisted logs, inv
 - Screens fetch and mutate only through `$lib/api/queries.ts`. Every write refreshes the cached reads, since one tick moves XP, consistency and the streak at once.
 - Theme colors are CSS tokens in `mobile/src/app.css` (`bg-card`, `text-amber`, `bg-heat-3`…). Use them rather than raw hex values.
 - Add shadcn-svelte components with `bunx shadcn-svelte@latest add <name>` (run in `mobile/`).
+- **Motion, sound and haptics** live in `$lib/feel/`: `haptic()` and `play()` for feedback (call them inside the tap), `rise`/`stagger` for things arriving, and shared keyframes in `app.css` (`animate-check-pop`, `animate-rise-in`…). Keep it quiet: transform/opacity only, 150–400 ms, celebrations only on the user's own action (never on a refetch), and everything collapses under "Reduce motion". Sound and haptics are per-device switches in Settings.
 - Links use sv-router's typed `p('/goals/:id', { params })`, so a link to a route that doesn't exist fails the type-check.
 
 ### API overview
@@ -213,5 +214,4 @@ Errors share one shape, `{ "error": { "code", "message", "issues?" } }`: `400` m
 - [ ] Capacitor builds for iOS and Android (needs Better Auth's bearer-token plugin)
 - [ ] Friends: shared heatmaps and weekly check-ins for goals marked "friends" (`visibility` already exists)
 - [ ] Ad-hoc to-dos with deadlines
-- [ ] Grow the quote set from 18 to ~100
 - [ ] R2 for images, once needed (removed for now)

@@ -21,7 +21,8 @@
 			<div class="flex flex-col items-center gap-1">
 				<span class="font-mono text-[11px] {current ? 'text-amber-bright' : 'text-muted-foreground'}">{week.xp}</span>
 				<div
-					class="w-full rounded {current ? 'bg-amber' : week.xp >= plan && plan > 0 ? 'bg-heat-3' : 'bg-heat-2'}"
+					style:animation-delay="{120 + i * 45}ms"
+					class="w-full origin-bottom animate-grow-up rounded {current ? 'bg-amber' : week.xp >= plan && plan > 0 ? 'bg-heat-3' : 'bg-heat-2'}"
 					style:height="{Math.max(2, Math.round((week.xp / max) * 96))}px"
 				></div>
 			</div>

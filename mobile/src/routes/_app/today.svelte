@@ -4,14 +4,12 @@
 	import Candle from '$lib/components/app/Candle.svelte';
 	import LevelUp from '$lib/components/app/LevelUp.svelte';
 	import LoadState from '$lib/components/app/LoadState.svelte';
-	import QuoteText from '$lib/components/app/QuoteText.svelte';
 	import StatStrip from '$lib/components/app/StatStrip.svelte';
 	import TaskRow from '$lib/components/app/TaskRow.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { haptic } from '$lib/feel/haptics';
 	import { play } from '$lib/feel/sound';
-	import { dayLabel, greeting, initial, percent } from '$lib/format';
-	import { quoteOfDay } from '$lib/quotes';
+	import { cadenceProgress, dayLabel, greeting, initial, percent } from '$lib/format';
 
 	const today = todayQuery();
 	const toggle = useToggleTask();
@@ -86,8 +84,6 @@
 				{ label: 'Consistency', value: percent(data.consistency), unit: data.consistency === null ? '' : '%' },
 			]}
 		/>
-
-		<QuoteText quote={quoteOfDay(data.day, 1)} />
 	</div>
 
 	{#each data.goals as goal (goal.id)}
@@ -100,7 +96,13 @@
 				<div class="relative">
 					<div class="card-list flex flex-col overflow-hidden rounded-2xl bg-card">
 						{#each goal.tasks as task (task.id)}
-							<TaskRow {task} ontoggle={() => onToggle(goal, task)} />
+							<TaskRow
+								title={task.title}
+								xp={task.xp}
+								done={task.doneToday}
+								detail={cadenceProgress(task.cadence, task.periodDone)}
+								ontoggle={() => onToggle(goal, task)}
+							/>
 						{/each}
 					</div>
 					{#if glowingGoal === goal.id}

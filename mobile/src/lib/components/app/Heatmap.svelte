@@ -41,7 +41,8 @@
 		style:grid-template-columns="repeat({weeks.length}, minmax(0, 1fr))"
 	>
 		{#each weeks as week, w (w)}
-			<div class="grid grid-rows-7 gap-0.5">
+			<!-- Columns fade in left to right, oldest first. -->
+			<div class="grid animate-fade-in grid-rows-7 gap-0.5" style:animation-delay="{w * 14}ms">
 				{#each week as day, d (d)}
 					{#if day}
 						<span class="flex aspect-square items-center justify-center rounded-[2px] {cellClass(day)}">
