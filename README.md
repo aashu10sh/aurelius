@@ -111,6 +111,21 @@ cron (*/5 * * * *) ──▶ ScheduleRemindersUseCase ──▶ Queue "Reminders
 
 Alternatives considered: sending directly from the cron handler (simpler, but one slow push service delays everyone and there are no retries), and a Durable Object alarm per user (exact timing, but a lot more moving parts for a daily nudge).
 
+### Product analytics (Mixpanel)
+
+Events go to a Mixpanel project in the **EU** data region, from two places that never overlap:
+
+| From | Tracks | How |
+| --- | --- | --- |
+| **API** (`IAnalytics` port → `AnalyticsService` → `MixpanelSink`) | What actually happened: `Signed Up`, `Goal Created`, `Task Added`, `Task Completed` (effort, XP, first of the day), `Task Uncompleted`, `Milestone Completed`, `Level Up`, `Goal Status Changed`, `Journal Entry Saved`, `Reflection Submitted`, `Rest Day Planned`, `Push Subscribed/Unsubscribed`, `Reminder Sent` | Use cases call `analytics.track()`, which only buffers. Middleware flushes after the response with `waitUntil`, and jobs flush at the end of each tick or batch, so tracking never slows or breaks a request. Event names are a typed union in `application/ports/IAnalytics.ts`. |
+| **Browser** (`mobile/src/lib/analytics.ts`) | Screens and UI moments: `Screen Viewed`, `Signed In`, `Onboarding Step Viewed/Completed`, `Install Card Shown`, `Install Tapped`, `App Installed`, `Notification Permission`, `Notification Opened`, `Test Notification Sent`, `Setting Changed` | `mixpanel-browser`'s core build (no session recorder), loaded lazily after first paint. It sends through **`/mp` on the app's own origin**, which the app worker proxies to `api-eu.mixpanel.com`, so ad blockers don't drop events. |
+
+- **One identity:** both sides use the user id as the distinct id, so anonymous Welcome visits merge into the user on sign-in. Sign-out resets the browser id.
+- **Profiles** hold name, username, time zone and reminder settings. No email.
+- **Never sent:** journal and reflection text (only counts such as `words`), task or goal titles, push endpoints. Server events skip IP geolocation (`ip=0`); location comes from the browser via the proxy.
+- **Opt-out:** Settings → Privacy → *Share usage analytics* (`user.analytics_enabled`). Off stops the browser SDK on that device and makes the API drop that user's server events at flush time.
+- **No token, no events:** with `MIXPANEL_TOKEN` empty, the API uses a no-op sink and the browser never loads the SDK. Use a separate Mixpanel project's token locally.
+
 ### Shared contract
 
 `backend/src/presentation/http/contract.ts` exports the API's request and response types, exposed as `backend/contract`. The frontend imports them **type-only**, so client and server can't drift and no backend code ships to the browser.
@@ -132,7 +147,7 @@ cp backend/.env.example backend/.env   # then fill in the Google OAuth client
 bun run dev
 ```
 
-`backend/.env` holds the Google OAuth client ID and secret and the Web Push (VAPID) key pair (gitignored). Generate the VAPID key once with `bunx @pushforge/builder vapid`, put the private JWK on one line as `VAPID_PRIVATE_KEY`, and set `VAPID_SUBJECT` to a real `mailto:` address. Keep the same key in every environment where subscriptions should survive: changing it invalidates them. In the Google Cloud console, the OAuth client needs each app origin under **Authorized JavaScript origins** (`http://localhost:5173`, the deployed app URL) and `<origin>/api/auth/callback/google` under **Authorized redirect URIs**. Use the app URL, never the API Worker's.
+`backend/.env` holds the Google OAuth client ID and secret the Web Push (VAPID) key pair, and the optional Mixpanel token (gitignored). Generate the VAPID key once with `bunx @pushforge/builder vapid`, put the private JWK on one line as `VAPID_PRIVATE_KEY`, and set `VAPID_SUBJECT` to a real `mailto:` address. Keep the same key in every environment where subscriptions should survive: changing it invalidates them. Set `MIXPANEL_TOKEN` to a **dev** Mixpanel project's token locally (EU region), or leave it empty to disable analytics. In the Google Cloud console, the OAuth client needs each app origin under **Authorized JavaScript origins** (`http://localhost:5173`, the deployed app URL) and `<origin>/api/auth/callback/google` under **Authorized redirect URIs**. Use the app URL, never the API Worker's.
 
 `bun run dev` (Alchemy) starts everything locally:
 
@@ -191,11 +206,12 @@ Both Workers ship with Cloudflare **observability** enabled (persisted logs, inv
 
 ### API overview
 
-All routes live under `/api`. Everything except `/health` and `/auth/*` requires a session.
+All routes live under `/api`. Everything except `/health`, `/auth/*` and `/analytics/config` requires a session.
 
 | Area | Endpoints |
 | --- | --- |
 | Auth | `/auth/*` (Better Auth: sign-in, sign-up, Google, account linking) |
+| Analytics | `GET /analytics/config` (public: the browser SDK's token, or null when analytics is off) |
 | Screens | `GET /today`, `GET /progress`, `GET /week` (the reflectable week, `canReflect`, `opensOn`), `PUT /week/reflection` (Sunday and Monday only, else `422`) |
 | Goals | `GET /goals?status=…`, `POST /goals`, `GET /goals/:id`, `PATCH /goals/:id`, `POST /goals/:id/status` |
 | Tasks | `POST /goals/:id/tasks`, `PATCH /tasks/:id`, `POST /tasks/:id/completion`, `DELETE /tasks/:id/completion` |

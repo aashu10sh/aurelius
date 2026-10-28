@@ -57,6 +57,9 @@ export const Api = Cloudflare.Worker(
         GOOGLE_CLIENT_SECRET: yield* Config.Redacted("GOOGLE_CLIENT_SECRET"),
         VAPID_PRIVATE_KEY: yield* Config.Redacted("VAPID_PRIVATE_KEY"),
         VAPID_SUBJECT: yield* Config.NonEmptyString("VAPID_SUBJECT"),
+        // Mixpanel project token (EU region). Unset disables analytics; use a
+        // separate dev project locally so testing never mixes with real data.
+        MIXPANEL_TOKEN: yield* Config.String("MIXPANEL_TOKEN").pipe(Config.withDefault("")),
       },
     };
   }),
@@ -89,7 +92,8 @@ export default Alchemy.Stack(
       env: { API: api },
       assets: {
         notFoundHandling: "single-page-application",
-        runWorkerFirst: ["/api/*"],
+        // /mp/* is the Mixpanel proxy (mobile/worker/index.ts).
+        runWorkerFirst: ["/api/*", "/mp/*"],
       },
       dev: { port: 5173 },
       observability,

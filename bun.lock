@@ -39,6 +39,7 @@
         "@fontsource-variable/geist": "^5.3.0",
         "@fontsource-variable/geist-mono": "^5.3.0",
         "better-auth": "1.7.12",
+        "mixpanel-browser": "2.84.0",
         "sv-router": "^0.19.0",
       },
       "devDependencies": {
@@ -522,6 +523,18 @@
 
     "@lucide/svelte": ["@lucide/svelte@1.61.0", "", { "peerDependencies": { "svelte": "^5" } }, "sha512-Vwj4ADoKgVogLFpEbXv2PS2hh2fj+aAqPuiNydI88Zkyb1l7veL4fXgRrOX3tgpESHhIGneNkSSYhHupvCBshg=="],
 
+    "@mixpanel/rrdom": ["@mixpanel/rrdom@2.0.0-alpha.18.6", "", { "dependencies": { "@mixpanel/rrweb-snapshot": "^2.0.0-alpha.18" } }, "sha512-JY1Kr8c5pPmFBdPMLIEm1e0/hw2xvsS515Qqf+5Lpm0AW+2e/ZvA6P6M+z4fXeuachfZZv06UhTvixiUJv355Q=="],
+
+    "@mixpanel/rrweb": ["@mixpanel/rrweb@2.0.0-alpha.18.6", "", { "dependencies": { "@mixpanel/rrdom": "^2.0.0-alpha.18", "@mixpanel/rrweb-snapshot": "^2.0.0-alpha.18", "@mixpanel/rrweb-types": "^2.0.0-alpha.18", "@mixpanel/rrweb-utils": "^2.0.0-alpha.18", "@types/css-font-loading-module": "0.0.7", "@xstate/fsm": "^1.4.0", "base64-arraybuffer": "^1.0.1", "mitt": "^3.0.0" } }, "sha512-9DOB723vDEy8zP88nrEmA2dFmVa+z0tc2AGTVrxHl1pJcnyhT3Z7SASWQxgcT4KGsqTIorJJ/D1sNI7j597Z9g=="],
+
+    "@mixpanel/rrweb-plugin-console-record": ["@mixpanel/rrweb-plugin-console-record@2.0.0-alpha.18.6", "", { "peerDependencies": { "@mixpanel/rrweb": "^2.0.0-alpha.18", "@mixpanel/rrweb-utils": "^2.0.0-alpha.18" } }, "sha512-qfRNGfWLHZHnMQ4IFQMObxf7ctX8YrRf205hppwb9yXwjZHyBsKkK+Gm3aot2pUMu1BEFeXSvFS38Nf3vKg4Qw=="],
+
+    "@mixpanel/rrweb-snapshot": ["@mixpanel/rrweb-snapshot@2.0.0-alpha.18.6", "", { "dependencies": { "postcss": "^8.4.38" } }, "sha512-8c8TArw8l0mmYPvKc3asq3hIzQ7uVrNVQ4xsVt+ESxHohW8r47ua/YLDpd2jV30FZj4Y3KvGTQl5sXLDI+02Zw=="],
+
+    "@mixpanel/rrweb-types": ["@mixpanel/rrweb-types@2.0.0-alpha.18.6", "", {}, "sha512-KvaTcbZR4mJ3w1b1fEq4AeSg9rUqvQ1gKko9r56ANUw4fqWam23xoXrLJ8Og+hPYTwIDQ99TkZBVXFTGJqYwpQ=="],
+
+    "@mixpanel/rrweb-utils": ["@mixpanel/rrweb-utils@2.0.0-alpha.18.6", "", {}, "sha512-1eEcOunlnv27oqHRhaK9F2fo5kB97M98+3VoZz6CCq816J37wveGQIiXDvb5qUOgMqjwJ9GCNRMUhrxSyM0C5w=="],
+
     "@mrleebo/prisma-ast": ["@mrleebo/prisma-ast@0.13.1", "", { "dependencies": { "chevrotain": "^10.5.0", "lilconfig": "^2.1.0" } }, "sha512-XyroGQXcHrZdvmrGJvsA9KNeOOgGMg1Vg9OlheUsBOSKznLMDl+YChxbkboRHvtFYJEMRYmlV3uoo/njCw05iw=="],
 
     "@napi-rs/lzma-linux-x64-gnu": ["@napi-rs/lzma-linux-x64-gnu@1.5.1", "", { "os": "linux", "cpu": "x64" }, "sha512-oTXEIha4SsuXdTA4Iyskj0kpdx2yVXdhd75c2v3xGrHFfVMsbhTPZU/nMPL4sWKo4pBHm3aucLaqGlF696dTyQ=="],
@@ -732,7 +745,11 @@
 
     "@types/bun": ["@types/bun@1.4.3", "", { "dependencies": { "bun-types": "1.4.3" } }, "sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw=="],
 
+    "@types/css-font-loading-module": ["@types/css-font-loading-module@0.0.7", "", {}, "sha512-nl09VhutdjINdWyXxHWN/w9zlNCfr60JUqJbd24YXUuCwgeL0TpFSdElCwb6cxfB6ybE19Gjj4g0jsgkXxKv1Q=="],
+
     "@types/estree": ["@types/estree@1.0.9", "", {}, "sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg=="],
+
+    "@types/json-logic-js": ["@types/json-logic-js@2.0.5", "", {}, "sha512-hu/FTi0zwCjQEFfbPur275cNoZj6NsuOBhhYNzqoSdfmMhuxFr58OZ957lyIOWc9+kO+2tFlBthRjcxuytD4HA=="],
 
     "@types/node": ["@types/node@24.19.2", "", { "dependencies": { "undici-types": ">=7.24.0 <7.24.7" } }, "sha512-93d49wCWJkCyN87MxLpNN6KXPCwFw7bVUg79mGUV1OS40JGWwVCr8n61DXCSqz7CV6/VfPkb7xec7uP2M+QHWQ=="],
 
@@ -741,6 +758,8 @@
     "@types/trusted-types": ["@types/trusted-types@2.0.7", "", {}, "sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw=="],
 
     "@types/ws": ["@types/ws@8.18.2", "", { "dependencies": { "@types/node": "*" } }, "sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w=="],
+
+    "@xstate/fsm": ["@xstate/fsm@1.6.5", "", {}, "sha512-b5o1I6aLNeYlU/3CPlj/Z91ybk1gUsKT+5NAJI+2W4UjvS5KLG28K9v5UvNoFVjHV8PajVZ00RH3vnjyQO7ZAw=="],
 
     "acorn": ["acorn@8.19.0", "", { "bin": { "acorn": "bin/acorn" } }, "sha512-oJlA3XiRm7Cyk6qFD2Jn8ak9B7jSy0qy00ADO3+8dpT0LSjFihQYv4C02LFCSYJV3Q37xYwwRy5m+IpIiUzqWw=="],
 
@@ -777,6 +796,8 @@
     "backend": ["backend@workspace:backend"],
 
     "balanced-match": ["balanced-match@4.0.4", "", {}, "sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA=="],
+
+    "base64-arraybuffer": ["base64-arraybuffer@1.0.2", "", {}, "sha512-I3yl4r9QB5ZRY3XuJVEPfc2XhZO6YweFPI+UovAzn+8/hb3oJ6lnysaFcjVpkCPfVWFUDvoZ8kmVDP7WyRtYtQ=="],
 
     "baseline-browser-mapping": ["baseline-browser-mapping@2.11.30", "", { "bin": { "baseline-browser-mapping": "dist/cli.cjs" } }, "sha512-YJs6Pz17RMNv8HoyKREtCY38E3BV1nPkWVmIb+XN1uHC1Vqt3KZCH/uJH9ZKRoiKb/icZ6tvehyee6RZNbFfRA=="],
 
@@ -1054,6 +1075,8 @@
 
     "jsesc": ["jsesc@3.1.0", "", { "bin": { "jsesc": "bin/jsesc" } }, "sha512-/sM3dO2FOzXjKQhJuo0Q173wf2KOo8t4I8vHy6lF9poUp7bKT0/NHE8fPX23PwfhnykfqnC2xRxOnVw5XuGIaA=="],
 
+    "json-logic-js": ["json-logic-js@2.0.5", "", {}, "sha512-rTT2+lqcuUmj4DgWfmzupZqQDA64AdmYqizzMPWj3DxGdfFNsxPpcNVSaTj4l8W2tG/+hg7/mQhxjU3aPacO6g=="],
+
     "json-schema-traverse": ["json-schema-traverse@1.0.0", "", {}, "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="],
 
     "json-with-bigint": ["json-with-bigint@3.5.12", "", {}, "sha512-uwbF/wSSuOgC7qqlq27Xp5B6a2MHVug3t0idZdTqu0JnlFvgJuH7ju+KAk/J06C7GfhoYy2gnb9wz2INqcne7w=="],
@@ -1119,6 +1142,10 @@
     "minimatch": ["minimatch@10.2.6", "", { "dependencies": { "brace-expansion": "^5.0.8" } }, "sha512-vpLQEs+VLCr1nU0BXS07maYoFwlDAH0gngQuuttxIwutDFEMHq2blX+8vpgxDdK3J1PwjCJiep77OitTZ4Ll1A=="],
 
     "minipass": ["minipass@7.1.3", "", {}, "sha512-tEBHqDnIoM/1rXME1zgka9g6Q2lcoCkxHLuc7ODJ5BxbP5d4c2Z5cGgtXAku59200Cx7diuHTOYfSBD8n6mm8A=="],
+
+    "mitt": ["mitt@3.0.1", "", {}, "sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw=="],
+
+    "mixpanel-browser": ["mixpanel-browser@2.84.0", "", { "dependencies": { "@mixpanel/rrweb": "2.0.0-alpha.18.6", "@mixpanel/rrweb-plugin-console-record": "2.0.0-alpha.18.6", "@mixpanel/rrweb-utils": "2.0.0-alpha.18.6", "@types/json-logic-js": "2.0.5", "json-logic-js": "2.0.5" } }, "sha512-GFvXNiJ6+0RA9fch6WEZBJL5U8FlHICmYXhKIa+zixeYxudC+BtKAbicMCYzgdekgJHLcPhWHAaARfIaArO1tA=="],
 
     "mobile": ["mobile@workspace:mobile"],
 
