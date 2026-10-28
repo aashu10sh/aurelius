@@ -23,10 +23,10 @@ export const routes = {
   },
   '/goals': {
     '/': AppGoalsIndex,
-    '/:id': () => import('../src/routes/_app/goals/[id].lazy.svelte'),
     '/new': {
       '/': () => import('../src/routes/_app/goals/new/index.lazy.svelte')
     },
+    '/:id': () => import('../src/routes/_app/goals/[id].lazy.svelte'),
     'layout': AppLayout,
     'hooks': appHooks
   },

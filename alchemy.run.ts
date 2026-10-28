@@ -46,11 +46,14 @@ export const Api = Cloudflare.Worker(
     return {
       main: "./backend/src/index.ts",
       observability,
-      // Run near D1 rather than near the visitor: a request makes several
-      // sequential D1 calls, each ~100ms when the Worker is far from the
-      // database. The app worker reaches this one over a service binding,
-      // so the visitor still connects to their nearest location.
-      placement: { mode: "smart" },
+      // Run next to D1 rather than near the visitor: a request makes several
+      // sequential D1 calls, and from Kathmandu (KTM) to the primary in
+      // Singapore (SIN) each one was ~90ms of network for <1ms of SQL.
+      // Pinned instead of "smart", which only moves a Worker once it sees
+      // enough traffic. The app worker reaches this one over a service
+      // binding, so visitors still connect to their nearest location.
+      // Move this if the D1 primary ever moves.
+      placement: { region: "aws:ap-southeast-1" },
       // Every 5 minutes; must match REMINDER_WINDOW_MINUTES in domain/rules/reminder.ts.
       crons: ["*/5 * * * *"],
       env: {
