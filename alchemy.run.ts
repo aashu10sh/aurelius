@@ -46,6 +46,11 @@ export const Api = Cloudflare.Worker(
     return {
       main: "./backend/src/index.ts",
       observability,
+      // Run near D1 rather than near the visitor: a request makes several
+      // sequential D1 calls, each ~100ms when the Worker is far from the
+      // database. The app worker reaches this one over a service binding,
+      // so the visitor still connects to their nearest location.
+      placement: { mode: "smart" },
       // Every 5 minutes; must match REMINDER_WINDOW_MINUTES in domain/rules/reminder.ts.
       crons: ["*/5 * * * *"],
       env: {
