@@ -11,7 +11,7 @@
 
 	const progress = progressQuery();
 
-	// The level bar fills from empty each time the screen opens.
+	// The level bar fills from empty when the tab first opens, then glides to new values.
 	const fill = new Tween(0, { easing: cubicOut });
 	$effect(() => {
 		const level = progress.data?.level;

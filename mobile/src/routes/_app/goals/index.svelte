@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { GoalStatus } from 'backend/contract';
 	import { p } from 'sv-router/generated';
-	import { goalsQuery } from '$lib/api/queries';
+	import { goalsQuery, prefetchGoal } from '$lib/api/queries';
 	import LoadState from '$lib/components/app/LoadState.svelte';
 	import Segmented from '$lib/components/app/Segmented.svelte';
 	import SegmentBar from '$lib/components/app/SegmentBar.svelte';
@@ -35,6 +35,7 @@
 		{#each goals.data as goal, i (goal.id)}
 			<a
 				href={p('/goals/:id', { params: { id: goal.id } })}
+				onpointerdown={() => prefetchGoal(goal.id)}
 				class="flex flex-col gap-4 rounded-2xl bg-card p-4 text-foreground transition-transform duration-150 active:scale-[0.98]"
 				in:rise|global={{ delay: stagger(i, 45) }}
 			>

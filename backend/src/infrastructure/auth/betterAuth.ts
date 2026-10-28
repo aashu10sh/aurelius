@@ -24,6 +24,12 @@ export const createAuth = (db: Db, config: AuthConfig) =>
     basePath: '/api/auth',
     database: drizzleAdapter(db, { provider: 'sqlite', schema }),
     emailAndPassword: { enabled: true },
+    // Session checks (every API request) read a signed cookie instead of D1
+    // for up to 5 minutes. The API only needs the user id from it; the app's
+    // own session check bypasses the cache because it acts on user fields
+    // (mobile/src/lib/session.ts). A session revoked on another device stays
+    // usable for at most those 5 minutes.
+    session: { cookieCache: { enabled: true, maxAge: 5 * 60 } },
     socialProviders: {
       google: { ...config.google, prompt: 'select_account' },
     },

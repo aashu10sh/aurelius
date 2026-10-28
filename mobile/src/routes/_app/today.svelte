@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { p } from 'sv-router/generated';
-	import { todayQuery, useToggleTask } from '$lib/api/queries';
+	import { prefetchGoal, todayQuery, useToggleTask } from '$lib/api/queries';
 	import Candle from '$lib/components/app/Candle.svelte';
 	import LevelUp from '$lib/components/app/LevelUp.svelte';
 	import LoadState from '$lib/components/app/LoadState.svelte';
@@ -88,7 +88,7 @@
 
 	{#each data.goals as goal (goal.id)}
 		<section class="flex flex-col gap-3">
-			<a href={p('/goals/:id', { params: { id: goal.id } })} class="flex items-baseline justify-between gap-3 text-foreground">
+			<a href={p('/goals/:id', { params: { id: goal.id } })} onpointerdown={() => prefetchGoal(goal.id)} class="flex items-baseline justify-between gap-3 text-foreground">
 				<h2 class="m-0 text-[17px] font-semibold">{goal.title}</h2>
 				<div class="font-mono text-xs text-muted-foreground">{goalMeta(goal)}</div>
 			</a>
@@ -113,7 +113,7 @@
 					{/if}
 				</div>
 			{:else}
-				<a href={p('/goals/:id', { params: { id: goal.id } })} class="rounded-2xl bg-card p-4 text-[15px] text-muted-foreground">
+				<a href={p('/goals/:id', { params: { id: goal.id } })} onpointerdown={() => prefetchGoal(goal.id)} class="rounded-2xl bg-card p-4 text-[15px] text-muted-foreground">
 					No small tasks yet. Add one →
 				</a>
 			{/if}

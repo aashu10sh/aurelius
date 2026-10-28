@@ -1,7 +1,8 @@
-import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query'
+import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryClient } from '@tanstack/svelte-query'
 import type { CompletionResponse, GoalStatus, TodayResponse } from 'backend/contract'
 import { toast } from 'svelte-sonner'
 import { authClient } from '../auth'
+import { tabShown } from '../tabs'
 import { api } from './endpoints'
 import { ApiError } from './http'
 
@@ -28,11 +29,28 @@ export const keys = {
   accounts: ['accounts'] as const,
 }
 
+// Shared by the screens' queries and the prefetch below, so both hit the same cache entry.
+const options = {
+  today: () => ({ queryKey: keys.today, queryFn: api.today }),
+  progress: () => ({ queryKey: keys.progress, queryFn: api.progress }),
+  week: () => ({ queryKey: keys.week, queryFn: api.week.get }),
+  journal: () => ({ queryKey: keys.journal, queryFn: () => api.journal.list() }),
+  goals: (statuses: GoalStatus[]) => ({ queryKey: keys.goals(statuses), queryFn: () => api.goals.list(statuses) }),
+  goal: (id: string) => ({ queryKey: keys.goal(id), queryFn: () => api.goals.get(id) }),
+}
+
+// A hidden tab keeps showing its cached data but doesn't refetch; once shown
+// again it refetches whatever went stale (e.g. after a write) in the background.
+const whileShown = <T extends object>(make: () => T) => {
+  const shown = tabShown()
+  return () => ({ ...make(), enabled: shown() })
+}
+
 export const meQuery = () => createQuery(() => ({ queryKey: keys.me, queryFn: api.me.get }))
-export const todayQuery = () => createQuery(() => ({ queryKey: keys.today, queryFn: api.today }))
-export const progressQuery = () => createQuery(() => ({ queryKey: keys.progress, queryFn: api.progress }))
-export const weekQuery = () => createQuery(() => ({ queryKey: keys.week, queryFn: api.week.get }))
-export const journalQuery = () => createQuery(() => ({ queryKey: keys.journal, queryFn: () => api.journal.list() }))
+export const todayQuery = () => createQuery(whileShown(options.today))
+export const progressQuery = () => createQuery(whileShown(options.progress))
+export const weekQuery = () => createQuery(whileShown(options.week))
+export const journalQuery = () => createQuery(whileShown(options.journal))
 export const restDaysQuery = () => createQuery(() => ({ queryKey: keys.restDays, queryFn: api.restDays.list }))
 
 // Sign-in methods ('credential' = username and password, 'google'), straight from Better Auth.
@@ -46,15 +64,30 @@ export const accountsQuery = () =>
     },
   }))
 
+// Switching the filter keeps the old list up until the new one arrives, instead of a skeleton.
 export const goalsQuery = (statuses: () => GoalStatus[]) =>
-  createQuery(() => ({ queryKey: keys.goals(statuses()), queryFn: () => api.goals.list(statuses()) }))
+  createQuery(whileShown(() => ({ ...options.goals(statuses()), placeholderData: keepPreviousData })))
 
-export const goalQuery = (id: () => string) =>
-  createQuery(() => ({ queryKey: keys.goal(id()), queryFn: () => api.goals.get(id()) }))
+export const goalQuery = (id: () => string) => createQuery(() => options.goal(id()))
+
+// Every tab's data, fetched once signed in, so no tab opens on a skeleton.
+// Fresh entries (within staleTime) are left alone.
+export const prefetchTabs = () =>
+  Promise.all([
+    queryClient.prefetchQuery(options.today()),
+    queryClient.prefetchQuery(options.goals(['active'])),
+    queryClient.prefetchQuery(options.progress()),
+    queryClient.prefetchQuery(options.week()),
+    queryClient.prefetchQuery(options.journal()),
+  ])
+
+// Started on touch-down of a goal link, so the detail is usually ready by the tap.
+export const prefetchGoal = (id: string) => queryClient.prefetchQuery(options.goal(id))
 
 const errorMessage = (error: unknown) => (error instanceof Error ? error.message : 'Something went wrong')
 
-// Every write can move XP, consistency or the streak, so refresh all reads.
+// Every write can move XP, consistency or the streak, so refresh all reads
+// (only those on screen refetch now; hidden tabs catch up when shown).
 // `quiet` skips the error toast for forms that show errors inline.
 export const useAction = <Args, Result>(fn: (args: Args) => Promise<Result>, options: { quiet?: boolean } = {}) => {
   const client = useQueryClient()

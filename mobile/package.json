@@ -36,6 +36,7 @@
     "@fontsource-variable/geist-mono": "^5.3.0",
     "better-auth": "1.7.12",
     "mixpanel-browser": "2.84.0",
-    "sv-router": "^0.19.0"
+    "sv-router": "^0.19.0",
+    "workbox-window": "7.4.1"
   }
 }

@@ -2,10 +2,19 @@ import { mount } from 'svelte'
 import './app.css'
 import App from './App.svelte'
 import { analytics } from '$lib/analytics'
+import { persistQueries, restoreQueries } from '$lib/api/persist'
+import { queryClient } from '$lib/api/queries'
 import { listenForInstall } from '$lib/install.svelte'
+import { seemsSignedIn } from '$lib/session'
+import { listenForUpdates } from '$lib/updates'
 
 listenForInstall()
+listenForUpdates()
 analytics.start()
+
+// Last session's data, so the first screen paints filled while it refreshes.
+if (seemsSignedIn()) restoreQueries(queryClient)
+persistQueries(queryClient)
 
 // Arrivals marked with ?via=… (Google sign-in, a tapped notification):
 // track them once, then clean the URL.
