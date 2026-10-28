@@ -1,0 +1,1 @@
+ALTER TABLE `user` ADD `analytics_enabled` integer DEFAULT true NOT NULL;

@@ -76,6 +76,7 @@ export const preferencesBody = z.object({
   timezone: z.string().optional(),
   reminderTime: z.string().optional(),
   dayStartHour: z.number().int().optional(),
+  analyticsEnabled: z.boolean().optional(),
 })
 
 export const journalBody = z.object({

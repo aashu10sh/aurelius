@@ -13,6 +13,7 @@ const toUser = (row: typeof user.$inferSelect): User => ({
   timezone: row.timezone,
   reminderTime: row.reminderTime,
   dayStartHour: row.dayStartHour,
+  analyticsEnabled: row.analyticsEnabled,
   createdAt: row.createdAt,
 })
 

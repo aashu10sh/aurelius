@@ -1,6 +1,7 @@
 // Web Push on this device: permission, the PushManager subscription, and
 // keeping the API's copy of it in sync. Reminders themselves are sent by the
 // API's cron + queue (backend/src/index.ts).
+import { analytics } from './analytics'
 import { api } from './api/endpoints'
 import { install } from './install.svelte'
 
@@ -52,7 +53,9 @@ export const push = {
 
   // Must run from a tap: browsers only show the permission prompt on a user gesture.
   async enable() {
+    const before = Notification.permission
     permission = await Notification.requestPermission()
+    if (before === 'default') analytics.track('Notification Permission', { result: permission })
     if (permission !== 'granted') return false
     const reg = await registration()
     const { publicKey } = await api.push.key()

@@ -6,6 +6,7 @@
 	import TopBar from '$lib/components/app/TopBar.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { authClient, authErrorMessage } from '$lib/auth';
+	import { analytics } from '$lib/analytics';
 	import { refreshSession } from '$lib/session';
 
 	let username = $state('');
@@ -26,6 +27,7 @@
 			error = e.message ?? 'Could not sign in';
 			return;
 		}
+		analytics.track('Signed In', { method: 'password' });
 		await refreshSession();
 		navigate('/today');
 	}

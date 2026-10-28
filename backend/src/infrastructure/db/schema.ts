@@ -28,6 +28,7 @@ export const user = sqliteTable('user', {
   timezone: text('timezone').notNull().default('UTC'),
   reminderTime: text('reminder_time').notNull().default('20:00'),
   dayStartHour: integer('day_start_hour').notNull().default(3),
+  analyticsEnabled: integer('analytics_enabled', { mode: 'boolean' }).notNull().default(true),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 })

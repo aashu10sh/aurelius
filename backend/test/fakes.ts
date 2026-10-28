@@ -1,3 +1,4 @@
+import type { AnalyticsEventName, AnalyticsProps, IAnalytics } from '../src/application/ports/IAnalytics'
 import type { IClock } from '../src/application/ports/IClock'
 import type { IIdGenerator } from '../src/application/ports/IIdGenerator'
 import type { IPushSender, PushResult } from '../src/application/ports/IPushSender'
@@ -254,4 +255,17 @@ export class FakeReminderQueue implements IReminderQueue {
   async enqueue(jobs: readonly ReminderJob[]) {
     this.jobs.push(...jobs)
   }
+}
+
+// Records analytics calls so tests can assert on them.
+export class FakeAnalytics implements IAnalytics {
+  events: { userId: string; event: AnalyticsEventName; properties: AnalyticsProps }[] = []
+  profiles: { userId: string; profile: AnalyticsProps }[] = []
+  track(userId: string, event: AnalyticsEventName, properties: AnalyticsProps = {}) {
+    this.events.push({ userId, event, properties })
+  }
+  identify(userId: string, profile: AnalyticsProps) {
+    this.profiles.push({ userId, profile })
+  }
+  async flush() {}
 }

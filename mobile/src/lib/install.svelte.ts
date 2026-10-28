@@ -2,6 +2,8 @@
 // which we hold on to so a button can show the native dialog later. iOS has
 // no prompt, so there we can only explain Share → Add to Home Screen.
 
+import { analytics } from './analytics'
+
 type InstallPromptEvent = Event & {
   prompt(): Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
@@ -26,6 +28,7 @@ export const listenForInstall = () => {
     deferred = event as InstallPromptEvent
   })
   addEventListener('appinstalled', () => {
+    analytics.track('App Installed')
     installed = true
     deferred = null
   })

@@ -1,12 +1,14 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { username } from 'better-auth/plugins'
+import type { IAnalytics } from '../../application/ports/IAnalytics'
 import type { Db } from '../db/client'
 import * as schema from '../db/schema'
 
 export type AuthConfig = {
   secret: string
   google: { clientId: string; clientSecret: string }
+  analytics: IAnalytics
 }
 
 // Bindings only exist per request on Workers, so the instance is built per
@@ -35,11 +37,27 @@ export const createAuth = (db: Db, config: AuthConfig) =>
       accountLinking: { enabled: true, allowDifferentEmails: true },
     },
     plugins: [username()],
+    // Sign-up is the one event the auth library owns, so it's tracked here.
+    databaseHooks: {
+      user: {
+        create: {
+          after: async (user, ctx) => {
+            config.analytics.identify(user.id, {
+              $name: user.name,
+              username: (user as { username?: string | null }).username ?? null,
+              $created: user.createdAt.toISOString(),
+            })
+            config.analytics.track(user.id, 'Signed Up', { method: ctx?.path?.includes('google') ? 'google' : 'password' })
+          },
+        },
+      },
+    },
     user: {
       additionalFields: {
         timezone: { type: 'string', defaultValue: 'UTC' },
         reminderTime: { type: 'string', defaultValue: '20:00' },
         dayStartHour: { type: 'number', defaultValue: 3 },
+        analyticsEnabled: { type: 'boolean', defaultValue: true, input: false },
       },
     },
   })

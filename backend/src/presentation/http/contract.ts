@@ -43,6 +43,7 @@ export type JournalResponse = Json<{ entries: JournalEntry[]; reflections: Refle
 export type JournalEntryResponse = Json<JournalEntry>
 export type ReflectionResponse = Json<{ reflection: Reflection; firstThisWeek: boolean }>
 export type PushKeyResponse = { publicKey: string }
+export type AnalyticsConfigResponse = { token: string | null }
 export type PushTestResponse = { sent: number; failed: number }
 
 // Requests

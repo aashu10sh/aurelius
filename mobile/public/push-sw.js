@@ -9,15 +9,19 @@ self.addEventListener('push', (event) => {
       tag: data.tag,
       icon: '/pwa-192x192.png',
       badge: '/pwa-192x192.png',
-      data: { url: data.url ?? '/today' },
+      data: { url: data.url ?? '/today', tag: data.tag },
     }),
   )
 })
 
 // Focus an open window and route it, or open the app at the notification's page.
+// ?via=notification lets the app count the open (src/main.ts).
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const url = new URL(event.notification.data?.url ?? '/today', self.location.origin).href
+  const target = new URL(event.notification.data?.url ?? '/today', self.location.origin)
+  target.searchParams.set('via', 'notification')
+  if (event.notification.data?.tag) target.searchParams.set('kind', event.notification.data.tag)
+  const url = target.href
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
       const open = windows.find((w) => new URL(w.url).origin === self.location.origin)

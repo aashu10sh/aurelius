@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { CalendarService } from '../../src/application/services/CalendarService'
+import { AnalyticsService } from '../../src/application/services/AnalyticsService'
 import { NotificationService } from '../../src/application/services/NotificationService'
 import { ScoreService } from '../../src/application/services/ScoreService'
 import { CompleteTaskUseCase } from '../../src/application/usecases/completions/CompleteTaskUseCase'
@@ -9,6 +10,7 @@ import { SetGoalStatusUseCase } from '../../src/application/usecases/goals/SetGo
 import { UpdateMilestoneUseCase } from '../../src/application/usecases/milestones/UpdateMilestoneUseCase'
 import { ScheduleRemindersUseCase } from '../../src/application/usecases/notifications/ScheduleRemindersUseCase'
 import { SendReminderUseCase } from '../../src/application/usecases/notifications/SendReminderUseCase'
+import { WriteJournalEntryUseCase } from '../../src/application/usecases/journal/WriteJournalEntryUseCase'
 import { GetProgressUseCase } from '../../src/application/usecases/progress/GetProgressUseCase'
 import { GetWeekUseCase } from '../../src/application/usecases/reflections/GetWeekUseCase'
 import { SubmitReflectionUseCase } from '../../src/application/usecases/reflections/SubmitReflectionUseCase'
@@ -16,6 +18,7 @@ import { PlanRestDayUseCase } from '../../src/application/usecases/restDays/Plan
 import { GetTodayUseCase } from '../../src/application/usecases/today/GetTodayUseCase'
 import { ConflictError, InvalidError, NotFoundError } from '../../src/domain/errors'
 import {
+  FakeAnalytics,
   FakePushSender,
   FakeReminderQueue,
   FixedClock,
@@ -41,6 +44,7 @@ const MONDAY = new Date('2026-10-26T14:00:00Z')
 const world = () => {
   const clock = new FixedClock(NOW)
   const ids = new SequentialIds()
+  const analytics = new FakeAnalytics()
   const users = new InMemoryUserRepository([
     {
       id: 'hari',
@@ -50,6 +54,7 @@ const world = () => {
       timezone: 'UTC',
       reminderTime: '20:00',
       dayStartHour: 3,
+      analyticsEnabled: true,
       createdAt: new Date('2026-10-01T09:00:00Z'),
     },
     {
@@ -60,6 +65,7 @@ const world = () => {
       timezone: 'UTC',
       reminderTime: '20:00',
       dayStartHour: 3,
+      analyticsEnabled: true,
       createdAt: new Date('2026-10-01T09:00:00Z'),
     },
   ])
@@ -80,6 +86,8 @@ const world = () => {
 
   return {
     clock,
+    users,
+    analytics,
     pushSubscriptions,
     sender,
     queue,
@@ -88,16 +96,17 @@ const world = () => {
     completions,
     milestones,
     metrics,
-    createGoal: new CreateGoalUseCase(goals, tasks, milestones, metrics, ids, clock),
-    setGoalStatus: new SetGoalStatusUseCase(goals, clock),
-    completeTask: new CompleteTaskUseCase(users, goals, tasks, completions, calendar, ids, clock, score),
-    undoCompletion: new UndoCompletionUseCase(users, goals, tasks, completions, calendar),
-    updateMilestone: new UpdateMilestoneUseCase(goals, milestones, clock),
+    createGoal: new CreateGoalUseCase(goals, tasks, milestones, metrics, ids, clock, analytics),
+    setGoalStatus: new SetGoalStatusUseCase(goals, clock, analytics),
+    completeTask: new CompleteTaskUseCase(users, goals, tasks, completions, calendar, ids, clock, score, analytics),
+    undoCompletion: new UndoCompletionUseCase(users, goals, tasks, completions, calendar, analytics),
+    updateMilestone: new UpdateMilestoneUseCase(goals, milestones, clock, analytics),
     getToday: new GetTodayUseCase(users, goals, tasks, completions, milestones, metrics, journal, score, calendar),
     getProgress: new GetProgressUseCase(users, goals, completions, score, calendar),
-    submitReflection: new SubmitReflectionUseCase(users, goals, reflections, calendar),
+    submitReflection: new SubmitReflectionUseCase(users, goals, reflections, calendar, analytics),
     getWeek: new GetWeekUseCase(users, goals, completions, reflections, score, calendar),
-    planRestDay: new PlanRestDayUseCase(users, restDays, calendar),
+    planRestDay: new PlanRestDayUseCase(users, restDays, calendar, analytics),
+    writeJournal: new WriteJournalEntryUseCase(users, journal, calendar, analytics),
     scheduleReminders: new ScheduleRemindersUseCase(users, pushSubscriptions, queue, calendar),
     sendReminder: new SendReminderUseCase(
       users,
@@ -109,6 +118,7 @@ const world = () => {
       score,
       notifications,
       calendar,
+      analytics,
     ),
   }
 }
@@ -331,5 +341,36 @@ describe('Reminders', () => {
     await seniorGoal(w)
     await subscribe(w, 'hari', 'https://push.example/hari')
     expect(await w.sendReminder.execute({ userId: 'hari', day: '2026-10-21' })).toBe('skipped')
+  })
+})
+
+describe('Analytics', () => {
+  test('ticks report effort, XP and whether it was the first of the day', async () => {
+    await seniorGoal(w)
+    await w.completeTask.execute('hari', w.tasks.rows[1]!.id)
+    await w.completeTask.execute('hari', w.tasks.rows[0]!.id)
+    const ticks = w.analytics.events.filter((e) => e.event === 'Task Completed')
+    expect(ticks.map((e) => e.properties)).toMatchObject([
+      { effort: 'light', xp: 10, first_of_day: true },
+      { effort: 'heavy', xp: 30, first_of_day: false },
+    ])
+  })
+
+  test('journal events carry counts, never the text', async () => {
+    await w.writeJournal.execute('hari', { mood: 4, body: 'A private thought about work' })
+    const [event] = w.analytics.events.filter((e) => e.event === 'Journal Entry Saved')
+    expect(event!.properties).toEqual({ has_mood: true, words: 5, backfilled: false })
+  })
+
+  test('the service drops events from users who opted out, and flushes once', async () => {
+    const sent: string[][] = []
+    const sink = { send: async (events: readonly { userId: string }[]) => void sent.push(events.map((e) => e.userId)) }
+    await w.users.updatePreferences('sita', { timezone: 'UTC', reminderTime: '20:00', dayStartHour: 3, analyticsEnabled: false })
+    const service = new AnalyticsService(sink, w.users, w.clock, new SequentialIds())
+    service.track('hari', 'Goal Created')
+    service.track('sita', 'Goal Created')
+    await service.flush()
+    await service.flush() // nothing left
+    expect(sent).toEqual([['hari']])
   })
 })

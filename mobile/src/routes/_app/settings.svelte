@@ -2,6 +2,7 @@
 	import type { PreferencesRequest } from 'backend/contract';
 	import { navigate, p } from 'sv-router/generated';
 	import { toast } from 'svelte-sonner';
+	import { analytics } from '$lib/analytics';
 	import { api } from '$lib/api/endpoints';
 	import { accountsQuery, meQuery, restDaysQuery, todayQuery, useAction } from '$lib/api/queries';
 	import Field from '$lib/components/app/Field.svelte';
@@ -97,7 +98,20 @@
 		}
 	}
 
-	const sendTest = useAction(() => api.push.test());
+	const sendTest = useAction(async () => {
+		analytics.track('Test Notification Sent');
+		return api.push.test();
+	});
+
+	const setting = (name: string, value: boolean) => analytics.track('Setting Changed', { setting: name, value });
+
+	// Stops both the browser SDK on this device and server-side events for the account.
+	const shareAnalytics = useAction(async (on: boolean) => {
+		if (on) analytics.setEnabled(true);
+		await api.me.updatePreferences({ analyticsEnabled: on });
+		if (on) setting('analytics', true);
+		else analytics.setEnabled(false);
+	});
 
 	async function leave() {
 		await signOut();
@@ -169,14 +183,47 @@
 		<div class="card-list flex flex-col rounded-2xl bg-card px-4">
 			<label class="flex min-h-14 items-center justify-between gap-3">
 				<span class="text-[15px]">Sounds</span>
-				<input type="checkbox" bind:checked={feel.sound} onchange={() => play('tick')} class="size-6 accent-[var(--primary)]" />
+				<input
+					type="checkbox"
+					bind:checked={feel.sound}
+					onchange={() => {
+						play('tick');
+						setting('sound', feel.sound);
+					}}
+					class="size-6 accent-[var(--primary)]"
+				/>
 			</label>
 			<label class="flex min-h-14 items-center justify-between gap-3">
 				<span class="text-[15px]">Haptics</span>
-				<input type="checkbox" bind:checked={feel.haptics} onchange={() => haptic('tap')} class="size-6 accent-[var(--primary)]" />
+				<input
+					type="checkbox"
+					bind:checked={feel.haptics}
+					onchange={() => {
+						haptic('tap');
+						setting('haptics', feel.haptics);
+					}}
+					class="size-6 accent-[var(--primary)]"
+				/>
 			</label>
 		</div>
 		<p class="m-0 text-sm text-muted-foreground">On this device. On iPhone, sounds follow the silent switch.</p>
+	</section>
+
+	<section class="flex flex-col gap-3">
+		<h2 class="m-0 text-[17px] font-semibold">Privacy</h2>
+		<div class="flex flex-col rounded-2xl bg-card px-4">
+			<label class="flex min-h-14 items-center justify-between gap-3">
+				<span class="text-[15px]">Share usage analytics</span>
+				<input
+					type="checkbox"
+					checked={me.data.analyticsEnabled}
+					disabled={shareAnalytics.isPending}
+					onchange={(e) => shareAnalytics.mutate(e.currentTarget.checked)}
+					class="size-6 accent-[var(--primary)]"
+				/>
+			</label>
+		</div>
+		<p class="m-0 text-sm text-muted-foreground">Which screens you use and what you tick, so Aurelius can get better. Never your journal or reflection text.</p>
 	</section>
 
 	<section class="flex flex-col gap-3">

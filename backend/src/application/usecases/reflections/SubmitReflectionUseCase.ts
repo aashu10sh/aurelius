@@ -1,10 +1,12 @@
 import { InvalidError } from '../../../domain/errors'
+import { weekStart } from '../../../domain/models/day'
 import type { GoalRatings, Reflection, ReflectionAnswers } from '../../../domain/models/journal'
 import type { IGoalRepository } from '../../../domain/repositories/IGoalRepository'
 import type { IReflectionRepository } from '../../../domain/repositories/IReflectionRepository'
 import type { IUserRepository } from '../../../domain/repositories/IUserRepository'
 import { assertScale } from '../../../domain/rules/invariants'
 import { reflectionWeek } from '../../../domain/rules/reflection'
+import type { IAnalytics } from '../../ports/IAnalytics'
 import type { ICalendarService } from '../../services/CalendarService'
 import { requireUser } from '../shared'
 
@@ -17,6 +19,7 @@ export class SubmitReflectionUseCase {
     private readonly goals: IGoalRepository,
     private readonly reflections: IReflectionRepository,
     private readonly calendar: ICalendarService,
+    private readonly analytics: IAnalytics,
   ) {}
 
   async execute(
@@ -43,6 +46,12 @@ export class SubmitReflectionUseCase {
       goalRatings: input.goalRatings,
     }
     await this.reflections.upsert(reflection)
+    this.analytics.track(userId, 'Reflection Submitted', {
+      first_this_week: existing === null,
+      late: start !== weekStart(this.calendar.today(user)), // Monday, for the week just ended
+      goals_rated: Object.keys(input.goalRatings).length,
+      questions_answered: Object.values(input.answers).filter((a) => a?.trim()).length,
+    })
     return { reflection, firstThisWeek: existing === null }
   }
 }

@@ -1,3 +1,4 @@
+import type { IAnalytics } from '../../application/ports/IAnalytics'
 import type { ISessionService } from '../../application/ports/ISessionService'
 import type { CompleteTaskUseCase } from '../../application/usecases/completions/CompleteTaskUseCase'
 import type { UndoCompletionUseCase } from '../../application/usecases/completions/UndoCompletionUseCase'
@@ -36,6 +37,10 @@ export interface AppContainer {
   handleAuth(request: Request): Promise<Response>
   // VAPID public key (base64url) the browser subscribes with.
   pushPublicKey(): string
+  // Flushed by middleware after each response.
+  analytics: Pick<IAnalytics, 'flush'>
+  // Mixpanel project token for the browser SDK; null when analytics is off.
+  analyticsToken: string | null
   useCases: {
     getMe: GetMeUseCase
     updatePreferences: UpdatePreferencesUseCase

@@ -33,6 +33,7 @@ import { UpdatePreferencesUseCase } from '../src/application/usecases/user/Updat
 import type { User } from '../src/domain/models/user'
 import type { AppContainer } from '../src/presentation/http/container'
 import {
+  FakeAnalytics,
   FakePushSender,
   FixedClock,
   InMemoryCompletionRepository,
@@ -59,6 +60,7 @@ class HeaderSessionService implements ISessionService {
 export const makeFakeContainer = (users: User[], now: Date): AppContainer => {
   const clock = new FixedClock(now)
   const ids = new SequentialIds()
+  const analytics = new FakeAnalytics()
   const userRepo = new InMemoryUserRepository(users)
   const goals = new InMemoryGoalRepository()
   const tasks = new InMemoryTaskRepository()
@@ -77,34 +79,36 @@ export const makeFakeContainer = (users: User[], now: Date): AppContainer => {
     session: new HeaderSessionService(),
     handleAuth: async () => new Response('auth', { status: 200 }),
     pushPublicKey: () => 'test-public-key',
+    analytics,
+    analyticsToken: 'test-token',
     useCases: {
       getMe: new GetMeUseCase(userRepo),
-      updatePreferences: new UpdatePreferencesUseCase(userRepo),
+      updatePreferences: new UpdatePreferencesUseCase(userRepo, analytics),
       getToday: new GetTodayUseCase(userRepo, goals, tasks, completions, milestones, metrics, journal, score, calendar),
       getProgress: new GetProgressUseCase(userRepo, goals, completions, score, calendar),
       listGoals: new ListGoalsUseCase(userRepo, goals, milestones, metrics, score, calendar),
       getGoal: new GetGoalUseCase(userRepo, goals, tasks, milestones, metrics, reflections, score, calendar),
-      createGoal: new CreateGoalUseCase(goals, tasks, milestones, metrics, ids, clock),
+      createGoal: new CreateGoalUseCase(goals, tasks, milestones, metrics, ids, clock, analytics),
       updateGoal: new UpdateGoalUseCase(goals),
-      setGoalStatus: new SetGoalStatusUseCase(goals, clock),
-      addTask: new AddTaskUseCase(goals, tasks, ids, clock),
+      setGoalStatus: new SetGoalStatusUseCase(goals, clock, analytics),
+      addTask: new AddTaskUseCase(goals, tasks, ids, clock, analytics),
       updateTask: new UpdateTaskUseCase(goals, tasks),
-      completeTask: new CompleteTaskUseCase(userRepo, goals, tasks, completions, calendar, ids, clock, score),
-      undoCompletion: new UndoCompletionUseCase(userRepo, goals, tasks, completions, calendar),
+      completeTask: new CompleteTaskUseCase(userRepo, goals, tasks, completions, calendar, ids, clock, score, analytics),
+      undoCompletion: new UndoCompletionUseCase(userRepo, goals, tasks, completions, calendar, analytics),
       addMilestone: new AddMilestoneUseCase(goals, milestones, ids),
-      updateMilestone: new UpdateMilestoneUseCase(goals, milestones, clock),
+      updateMilestone: new UpdateMilestoneUseCase(goals, milestones, clock, analytics),
       removeMilestone: new RemoveMilestoneUseCase(goals, milestones),
       setMetric: new SetMetricUseCase(goals, metrics),
       logMetric: new LogMetricUseCase(userRepo, goals, metrics, calendar, ids),
       listRestDays: new ListRestDaysUseCase(userRepo, restDays, calendar),
-      planRestDay: new PlanRestDayUseCase(userRepo, restDays, calendar),
+      planRestDay: new PlanRestDayUseCase(userRepo, restDays, calendar, analytics),
       cancelRestDay: new CancelRestDayUseCase(userRepo, restDays, calendar),
-      writeJournalEntry: new WriteJournalEntryUseCase(userRepo, journal, calendar),
+      writeJournalEntry: new WriteJournalEntryUseCase(userRepo, journal, calendar, analytics),
       listJournal: new ListJournalUseCase(journal, reflections),
       getWeek: new GetWeekUseCase(userRepo, goals, completions, reflections, score, calendar),
-      submitReflection: new SubmitReflectionUseCase(userRepo, goals, reflections, calendar),
-      subscribePush: new SubscribePushUseCase(userRepo, pushSubscriptions, clock),
-      unsubscribePush: new UnsubscribePushUseCase(pushSubscriptions),
+      submitReflection: new SubmitReflectionUseCase(userRepo, goals, reflections, calendar, analytics),
+      subscribePush: new SubscribePushUseCase(userRepo, pushSubscriptions, clock, analytics),
+      unsubscribePush: new UnsubscribePushUseCase(pushSubscriptions, analytics),
       sendTestNotification: new SendTestNotificationUseCase(notifications),
     },
   }

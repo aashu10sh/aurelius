@@ -5,6 +5,7 @@ import type { IGoalRepository } from '../../../domain/repositories/IGoalReposito
 import type { ITaskRepository } from '../../../domain/repositories/ITaskRepository'
 import type { IUserRepository } from '../../../domain/repositories/IUserRepository'
 import { levelFor, XP_BY_EFFORT } from '../../../domain/rules/xp'
+import type { IAnalytics } from '../../ports/IAnalytics'
 import type { IClock } from '../../ports/IClock'
 import type { IIdGenerator } from '../../ports/IIdGenerator'
 import type { ICalendarService } from '../../services/CalendarService'
@@ -23,6 +24,7 @@ export class CompleteTaskUseCase {
     private readonly ids: IIdGenerator,
     private readonly clock: IClock,
     private readonly score: IScoreService,
+    private readonly analytics: IAnalytics,
   ) {}
 
   async execute(userId: string, taskId: string): Promise<Completion & { levelUp: number | null }> {
@@ -31,7 +33,11 @@ export class CompleteTaskUseCase {
     if (task.archived || goal.status !== 'active') throw new InvalidError('This task is no longer active')
 
     const day = this.calendar.today(user)
-    if (await this.completions.findByTaskAndDay(task.id, day)) {
+    const [existing, doneToday] = await Promise.all([
+      this.completions.findByTaskAndDay(task.id, day),
+      this.completions.listByUserBetween(userId, day, day),
+    ])
+    if (existing) {
       throw new ConflictError('Task already completed today')
     }
 
@@ -46,6 +52,15 @@ export class CompleteTaskUseCase {
     const before = levelFor(await this.score.totalXp(userId)).level
     await this.completions.create(completion)
     const after = levelFor(await this.score.totalXp(userId)).level
-    return { ...completion, levelUp: after > before ? after : null }
+    const levelUp = after > before ? after : null
+    this.analytics.track(userId, 'Task Completed', {
+      effort: task.effort,
+      xp: completion.xpAwarded,
+      cadence: task.cadence.type,
+      first_of_day: doneToday.length === 0,
+      level: after,
+    })
+    if (levelUp) this.analytics.track(userId, 'Level Up', { level: levelUp })
+    return { ...completion, levelUp }
   }
 }

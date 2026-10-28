@@ -7,6 +7,7 @@ import type { ITaskRepository } from '../../../domain/repositories/ITaskReposito
 import type { IUserRepository } from '../../../domain/repositories/IUserRepository'
 import { reflectionOpensOn, reflectionWeek } from '../../../domain/rules/reflection'
 import { composeReminder } from '../../../domain/rules/reminder'
+import type { IAnalytics } from '../../ports/IAnalytics'
 import type { ReminderJob } from '../../ports/IReminderQueue'
 import type { ICalendarService } from '../../services/CalendarService'
 import type { INotificationService } from '../../services/NotificationService'
@@ -27,6 +28,7 @@ export class SendReminderUseCase {
     private readonly score: IScoreService,
     private readonly notifications: INotificationService,
     private readonly calendar: ICalendarService,
+    private readonly analytics: IAnalytics,
   ) {}
 
   async execute(job: ReminderJob): Promise<ReminderOutcome> {
@@ -55,6 +57,14 @@ export class SendReminderUseCase {
     if (!notification) return 'skipped'
 
     const { sent, failed } = await this.notifications.notify(user.id, notification)
+    if (sent > 0) {
+      this.analytics.track(user.id, 'Reminder Sent', {
+        kind: notification.tag,
+        title: notification.title,
+        devices: sent,
+        streak: streak.current,
+      })
+    }
     if (sent === 0 && failed > 0) {
       await this.log.release(user.id, job.day)
       return 'retry'

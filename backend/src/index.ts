@@ -10,13 +10,15 @@ export default {
 
   // Cron (see alchemy.run.ts): queue the reminders due in this window.
   async scheduled(controller, env) {
-    const queued = await makeJobs(env).scheduleReminders.execute(new Date(controller.scheduledTime))
+    const jobs = makeJobs(env)
+    const queued = await jobs.scheduleReminders.execute(new Date(controller.scheduledTime))
     if (queued) console.log('reminders queued', { queued })
+    await jobs.analytics.flush()
   },
 
   // Queue consumer: compose and send each reminder.
   async queue(batch, env) {
-    const { sendReminder } = makeJobs(env)
+    const { sendReminder, analytics } = makeJobs(env)
     for (const message of batch.messages) {
       try {
         const outcome = await sendReminder.execute(message.body)
@@ -27,5 +29,6 @@ export default {
         message.retry({ delaySeconds: 60 })
       }
     }
+    await analytics.flush()
   },
 } satisfies ExportedHandler<Env, ReminderJob>

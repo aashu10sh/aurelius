@@ -9,6 +9,7 @@ import type { IMetricRepository } from '../../../domain/repositories/IMetricRepo
 import type { IMilestoneRepository } from '../../../domain/repositories/IMilestoneRepository'
 import type { ITaskRepository } from '../../../domain/repositories/ITaskRepository'
 import { assertMetric, assertTitle, normalizeCadence } from '../../../domain/rules/invariants'
+import type { IAnalytics } from '../../ports/IAnalytics'
 import type { IClock } from '../../ports/IClock'
 import type { IIdGenerator } from '../../ports/IIdGenerator'
 
@@ -32,6 +33,7 @@ export class CreateGoalUseCase {
     private readonly metrics: IMetricRepository,
     private readonly ids: IIdGenerator,
     private readonly clock: IClock,
+    private readonly analytics: IAnalytics,
   ) {}
 
   async execute(userId: string, input: CreateGoalInput): Promise<Goal> {
@@ -77,6 +79,12 @@ export class CreateGoalUseCase {
       ...milestones.map((m) => this.milestones.create(m)),
       ...(metric ? [this.metrics.save(metric)] : []),
     ])
+    this.analytics.track(userId, 'Goal Created', {
+      tasks: tasks.length,
+      milestones: milestones.length,
+      has_metric: metric !== null,
+      has_target_date: goal.targetDate !== null,
+    })
     return goal
   }
 }

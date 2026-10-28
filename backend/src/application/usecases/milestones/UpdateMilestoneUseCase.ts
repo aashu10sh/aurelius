@@ -3,6 +3,7 @@ import type { Milestone } from '../../../domain/models/milestone'
 import type { IGoalRepository } from '../../../domain/repositories/IGoalRepository'
 import type { IMilestoneRepository } from '../../../domain/repositories/IMilestoneRepository'
 import { assertTitle } from '../../../domain/rules/invariants'
+import type { IAnalytics } from '../../ports/IAnalytics'
 import type { IClock } from '../../ports/IClock'
 import { requireGoal } from '../shared'
 
@@ -12,6 +13,7 @@ export class UpdateMilestoneUseCase {
     private readonly goals: IGoalRepository,
     private readonly milestones: IMilestoneRepository,
     private readonly clock: IClock,
+    private readonly analytics: IAnalytics,
   ) {}
 
   async execute(userId: string, milestoneId: string, input: { title?: string; done?: boolean }): Promise<Milestone> {
@@ -27,6 +29,7 @@ export class UpdateMilestoneUseCase {
       doneAt,
     }
     await this.milestones.update(next)
+    if (!milestone.doneAt && next.doneAt) this.analytics.track(userId, 'Milestone Completed', {})
     return next
   }
 }

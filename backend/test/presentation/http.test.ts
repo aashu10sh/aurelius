@@ -10,6 +10,7 @@ const hari = {
   timezone: 'UTC',
   reminderTime: '20:00',
   dayStartHour: 3,
+  analyticsEnabled: true,
   createdAt: new Date('2026-10-01T09:00:00Z'),
 }
 

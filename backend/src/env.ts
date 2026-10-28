@@ -9,4 +9,5 @@ export type Env = {
   REMINDERS: Queue<ReminderJob>
   VAPID_PRIVATE_KEY: string // JWK JSON, from `bunx @pushforge/builder vapid`
   VAPID_SUBJECT: string // 'mailto:…' contact for push services
+  MIXPANEL_TOKEN: string // '' disables analytics (e.g. dev without a dev project)
 }

@@ -6,12 +6,13 @@ export const authClient = createAuthClient({
   basePath: '/api/auth',
   plugins: [
     usernameClient(),
-    // Mirrors user.additionalFields in backend/src/auth.ts.
+    // Mirrors user.additionalFields in backend/src/infrastructure/auth/betterAuth.ts.
     inferAdditionalFields({
       user: {
         timezone: { type: 'string', required: false },
         reminderTime: { type: 'string', required: false },
         dayStartHour: { type: 'number', required: false },
+        analyticsEnabled: { type: 'boolean', required: false, input: false },
       },
     }),
   ],

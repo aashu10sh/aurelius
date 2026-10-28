@@ -3,6 +3,7 @@ import type { Cadence, Effort, Task } from '../../../domain/models/task'
 import type { IGoalRepository } from '../../../domain/repositories/IGoalRepository'
 import type { ITaskRepository } from '../../../domain/repositories/ITaskRepository'
 import { assertTitle, normalizeCadence } from '../../../domain/rules/invariants'
+import type { IAnalytics } from '../../ports/IAnalytics'
 import type { IClock } from '../../ports/IClock'
 import type { IIdGenerator } from '../../ports/IIdGenerator'
 import { requireGoal } from '../shared'
@@ -15,6 +16,7 @@ export class AddTaskUseCase {
     private readonly tasks: ITaskRepository,
     private readonly ids: IIdGenerator,
     private readonly clock: IClock,
+    private readonly analytics: IAnalytics,
   ) {}
 
   async execute(userId: string, goalId: string, input: AddTaskInput): Promise<Task> {
@@ -31,6 +33,7 @@ export class AddTaskUseCase {
       createdAt: this.clock.now(),
     }
     await this.tasks.create(task)
+    this.analytics.track(userId, 'Task Added', { effort: task.effort, cadence: task.cadence.type })
     return task
   }
 }

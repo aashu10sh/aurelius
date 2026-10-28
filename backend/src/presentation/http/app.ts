@@ -15,6 +15,8 @@ import { taskRoutes } from './routes/tasks'
 // No session needed: health check and the auth provider's own endpoints.
 const publicRoutes = new Hono<AppEnv>()
   .get('/health', (c) => c.json({ ok: true }))
+  // Public: the Welcome screen tracks before anyone signs in.
+  .get('/analytics/config', (c) => c.json({ token: c.var.container.analyticsToken }))
   .on(['GET', 'POST'], '/auth/*', (c) => c.var.container.handleAuth(c.req.raw))
 
 export const createApp = <Bindings extends object>(makeContainer: (env: Bindings) => AppContainer) => {

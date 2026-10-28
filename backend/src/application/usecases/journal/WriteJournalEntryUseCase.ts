@@ -4,6 +4,7 @@ import type { JournalEntry } from '../../../domain/models/journal'
 import type { IJournalRepository } from '../../../domain/repositories/IJournalRepository'
 import type { IUserRepository } from '../../../domain/repositories/IUserRepository'
 import { assertScale } from '../../../domain/rules/invariants'
+import type { IAnalytics } from '../../ports/IAnalytics'
 import type { ICalendarService } from '../../services/CalendarService'
 import { requireUser } from '../shared'
 
@@ -15,6 +16,7 @@ export class WriteJournalEntryUseCase {
     private readonly users: IUserRepository,
     private readonly journal: IJournalRepository,
     private readonly calendar: ICalendarService,
+    private readonly analytics: IAnalytics,
   ) {}
 
   async execute(userId: string, input: { day?: string; mood?: number | null; body: string }): Promise<JournalEntry> {
@@ -29,6 +31,12 @@ export class WriteJournalEntryUseCase {
 
     const entry: JournalEntry = { userId, day, mood: input.mood ?? null, body: input.body.trim() }
     await this.journal.upsert(entry)
+    // Never the text itself: only whether there was any, and roughly how much.
+    this.analytics.track(userId, 'Journal Entry Saved', {
+      has_mood: entry.mood !== null,
+      words: entry.body ? entry.body.split(/\s+/).length : 0,
+      backfilled: day !== today,
+    })
     return entry
   }
 }

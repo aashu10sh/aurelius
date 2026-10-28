@@ -12,8 +12,8 @@
 		pending = true;
 		const { error } = await authClient.signIn.social({
 			provider: 'google',
-			callbackURL: '/today',
-			newUserCallbackURL: '/onboarding',
+			callbackURL: '/today?via=google',
+			newUserCallbackURL: '/onboarding?via=google',
 			errorCallbackURL: '/sign-in',
 		});
 		if (error) pending = false;

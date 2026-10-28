@@ -1,13 +1,25 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
+	import { analytics } from '$lib/analytics';
 	import { Button } from '$lib/components/ui/button';
 	import { install } from '$lib/install.svelte';
 
 	// Nudges browser visitors to install the PWA; hidden inside the installed app.
 	let showSteps = $state(false);
 
+	// Once per mount; the method can change later when the browser's prompt arrives.
+	$effect(() => {
+		if (untrack(() => !install.installed)) analytics.track('Install Card Shown', { method: untrack(() => install.method) });
+	});
+
 	async function onInstall() {
-		if (install.method === 'prompt') await install.prompt();
-		else showSteps = !showSteps;
+		if (install.method === 'prompt') {
+			const accepted = await install.prompt();
+			analytics.track('Install Tapped', { method: 'prompt', accepted });
+		} else {
+			if (!showSteps) analytics.track('Install Tapped', { method: install.method, accepted: null });
+			showSteps = !showSteps;
+		}
 	}
 </script>
 

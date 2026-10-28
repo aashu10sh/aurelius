@@ -3,6 +3,7 @@ import type { ICompletionRepository } from '../../../domain/repositories/IComple
 import type { IGoalRepository } from '../../../domain/repositories/IGoalRepository'
 import type { ITaskRepository } from '../../../domain/repositories/ITaskRepository'
 import type { IUserRepository } from '../../../domain/repositories/IUserRepository'
+import type { IAnalytics } from '../../ports/IAnalytics'
 import type { ICalendarService } from '../../services/CalendarService'
 import { requireTask, requireUser } from '../shared'
 
@@ -14,6 +15,7 @@ export class UndoCompletionUseCase {
     private readonly tasks: ITaskRepository,
     private readonly completions: ICompletionRepository,
     private readonly calendar: ICalendarService,
+    private readonly analytics: IAnalytics,
   ) {}
 
   async execute(userId: string, taskId: string): Promise<void> {
@@ -22,5 +24,6 @@ export class UndoCompletionUseCase {
     const completion = await this.completions.findByTaskAndDay(task.id, this.calendar.today(user))
     if (!completion) throw new NotFoundError('Completion')
     await this.completions.delete(completion.id)
+    this.analytics.track(userId, 'Task Uncompleted', { effort: task.effort })
   }
 }

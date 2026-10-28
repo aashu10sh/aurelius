@@ -10,6 +10,7 @@
 	import GoalForm from '$lib/components/app/GoalForm.svelte';
 	import TaskRow from '$lib/components/app/TaskRow.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { analytics } from '$lib/analytics';
 	import { haptic } from '$lib/feel/haptics';
 	import { play } from '$lib/feel/sound';
 	import { duration } from '$lib/feel/motion';
@@ -80,9 +81,14 @@
 	// Asking for notification permission must happen on this tap, not on load.
 	async function finish() {
 		await savePrefs.mutateAsync(reminder).catch(() => {});
-		if (notify && push.availability === 'ok') await push.enable().catch(() => {});
+		const notifications = notify && push.availability === 'ok' ? await push.enable().catch(() => false) : false;
+		analytics.track('Onboarding Completed', { notifications, reminder_time: reminder });
 		navigate('/today');
 	}
+
+	// Where people drop off: one event per step reached.
+	const STEP_NAMES = ['how it works 1', 'how it works 2', 'how it works 3', 'first goal', 'reminder'];
+	$effect(() => analytics.track('Onboarding Step Viewed', { step: step + 1, name: STEP_NAMES[step] ?? null }));
 </script>
 
 <div class="mx-auto flex min-h-dvh max-w-md flex-col px-5 pt-14 pb-[max(env(safe-area-inset-bottom),50px)]">
