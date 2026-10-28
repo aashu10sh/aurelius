@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { GoalDetailResponse, GoalStatus } from 'backend/contract';
+	import type { GoalDetailResponse } from 'backend/contract';
 	import { p, route } from 'sv-router/generated';
 	import { slide } from 'svelte/transition';
 	import { api } from '$lib/api/endpoints';
-	import { goalQuery, useAction } from '$lib/api/queries';
+	import { goalQuery, useAction, useSetGoalStatus } from '$lib/api/queries';
 	import LoadState from '$lib/components/app/LoadState.svelte';
 	import SegmentBar from '$lib/components/app/SegmentBar.svelte';
 	import StatStrip from '$lib/components/app/StatStrip.svelte';
@@ -28,7 +28,7 @@
 	);
 	const addMilestone = useAction((title: string) => api.goals.addMilestone(id, title));
 	const logMetric = useAction((value: number) => api.goals.logMetric(id, value));
-	const setStatus = useAction((status: GoalStatus) => api.goals.setStatus(id, status));
+	const setStatus = useSetGoalStatus(() => id);
 
 	const openSheet = (task: GoalDetailResponse['tasks'][number] | null) => {
 		editing = task;

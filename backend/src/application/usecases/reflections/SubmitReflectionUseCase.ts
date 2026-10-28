@@ -26,11 +26,13 @@ export class SubmitReflectionUseCase {
     userId: string,
     input: { answers: ReflectionAnswers; goalRatings: GoalRatings },
   ): Promise<{ reflection: Reflection; firstThisWeek: boolean }> {
-    const user = await requireUser(this.users, userId)
+    const [user, goals] = await Promise.all([
+      requireUser(this.users, userId),
+      this.goals.listByUser(userId, ['active']),
+    ])
     const start = reflectionWeek(this.calendar.today(user))
     if (!start) throw new InvalidError('Weekly reflections open on Sunday')
 
-    const goals = await this.goals.listByUser(userId, ['active'])
     const goalIds = new Set(goals.map((g) => g.id))
 
     for (const [goalId, { rating }] of Object.entries(input.goalRatings)) {

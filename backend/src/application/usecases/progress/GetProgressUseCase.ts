@@ -39,11 +39,13 @@ export class GetProgressUseCase {
   ) {}
 
   async execute(userId: string): Promise<ProgressView> {
-    const user = await requireUser(this.users, userId)
+    const [user, goals] = await Promise.all([
+      requireUser(this.users, userId),
+      this.goals.listByUser(userId, ['active']),
+    ])
     const today = this.calendar.today(user)
     const thisWeek = weekStart(today)
     const from = addDays(thisWeek, -7 * (HEATMAP_WEEKS - 1))
-    const goals = await this.goals.listByUser(userId, ['active'])
 
     const [xp, consistency, streak, plannedWeeklyXp, completions] = await Promise.all([
       this.score.totalXp(userId),

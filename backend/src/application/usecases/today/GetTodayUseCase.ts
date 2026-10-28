@@ -51,9 +51,11 @@ export class GetTodayUseCase {
   ) {}
 
   async execute(userId: string): Promise<TodayView> {
-    const user = await requireUser(this.users, userId)
+    const [user, goals] = await Promise.all([
+      requireUser(this.users, userId),
+      this.goals.listByUser(userId, ['active']),
+    ])
     const today = this.calendar.today(user)
-    const goals = await this.goals.listByUser(userId, ['active'])
     const ids = goals.map((g) => g.id)
     const periodFrom = minDay(weekStart(today), monthStart(today))
 

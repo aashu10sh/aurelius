@@ -19,8 +19,10 @@ export class UndoCompletionUseCase {
   ) {}
 
   async execute(userId: string, taskId: string): Promise<void> {
-    const user = await requireUser(this.users, userId)
-    const { task } = await requireTask(this.tasks, this.goals, userId, taskId)
+    const [user, { task }] = await Promise.all([
+      requireUser(this.users, userId),
+      requireTask(this.tasks, this.goals, userId, taskId),
+    ])
     const completion = await this.completions.findByTaskAndDay(task.id, this.calendar.today(user))
     if (!completion) throw new NotFoundError('Completion')
     await this.completions.delete(completion.id)

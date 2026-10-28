@@ -28,14 +28,17 @@ export class CompleteTaskUseCase {
   ) {}
 
   async execute(userId: string, taskId: string): Promise<Completion & { levelUp: number | null }> {
-    const user = await requireUser(this.users, userId)
-    const { task, goal } = await requireTask(this.tasks, this.goals, userId, taskId)
+    const [user, { task, goal }] = await Promise.all([
+      requireUser(this.users, userId),
+      requireTask(this.tasks, this.goals, userId, taskId),
+    ])
     if (task.archived || goal.status !== 'active') throw new InvalidError('This task is no longer active')
 
     const day = this.calendar.today(user)
-    const [existing, doneToday] = await Promise.all([
+    const [existing, doneToday, xp] = await Promise.all([
       this.completions.findByTaskAndDay(task.id, day),
       this.completions.listByUserBetween(userId, day, day),
+      this.score.totalXp(userId),
     ])
     if (existing) {
       throw new ConflictError('Task already completed today')
@@ -49,9 +52,9 @@ export class CompleteTaskUseCase {
       xpAwarded: XP_BY_EFFORT[task.effort],
       createdAt: this.clock.now(),
     }
-    const before = levelFor(await this.score.totalXp(userId)).level
     await this.completions.create(completion)
-    const after = levelFor(await this.score.totalXp(userId)).level
+    const before = levelFor(xp).level
+    const after = levelFor(xp + completion.xpAwarded).level
     const levelUp = after > before ? after : null
     this.analytics.track(userId, 'Task Completed', {
       effort: task.effort,

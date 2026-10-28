@@ -13,8 +13,10 @@ export class AddMilestoneUseCase {
   ) {}
 
   async execute(userId: string, goalId: string, title: string): Promise<Milestone> {
-    const goal = await requireGoal(this.goals, userId, goalId)
-    const existing = await this.milestones.listByGoalIds([goal.id])
+    const [goal, existing] = await Promise.all([
+      requireGoal(this.goals, userId, goalId),
+      this.milestones.listByGoalIds([goalId]),
+    ])
     const milestone: Milestone = {
       id: this.ids.next(),
       goalId: goal.id,

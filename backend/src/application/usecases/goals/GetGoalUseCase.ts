@@ -37,8 +37,10 @@ export class GetGoalUseCase {
   ) {}
 
   async execute(userId: string, goalId: string): Promise<GoalDetail> {
-    const user = await requireUser(this.users, userId)
-    const goal = await requireGoal(this.goals, userId, goalId)
+    const [user, goal] = await Promise.all([
+      requireUser(this.users, userId),
+      requireGoal(this.goals, userId, goalId),
+    ])
     const today = this.calendar.today(user)
 
     const [tasks, milestones, metrics, reflections, consistency] = await Promise.all([

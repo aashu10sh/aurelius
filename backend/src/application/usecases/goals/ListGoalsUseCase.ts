@@ -19,9 +19,11 @@ export class ListGoalsUseCase {
   ) {}
 
   async execute(userId: string, statuses: readonly GoalStatus[] = ['active']): Promise<GoalSummary[]> {
-    const user = await requireUser(this.users, userId)
+    const [user, goals] = await Promise.all([
+      requireUser(this.users, userId),
+      this.goals.listByUser(userId, statuses),
+    ])
     const today = this.calendar.today(user)
-    const goals = await this.goals.listByUser(userId, statuses)
     const ids = goals.map((g) => g.id)
 
     const [milestones, metrics, consistency] = await Promise.all([

@@ -35,12 +35,14 @@ export class GetWeekUseCase {
   ) {}
 
   async execute(userId: string): Promise<WeekView> {
-    const user = await requireUser(this.users, userId)
+    const [user, goals] = await Promise.all([
+      requireUser(this.users, userId),
+      this.goals.listByUser(userId, ['active']),
+    ])
     const today = this.calendar.today(user)
     const open = reflectionWeek(today)
     const start = open ?? weekStart(today)
     const end = addDays(start, 6)
-    const goals = await this.goals.listByUser(userId, ['active'])
 
     const [completions, reflection, consistency, streak, plannedXp] = await Promise.all([
       this.completions.listByUserBetween(userId, start, minDay(end, today)),

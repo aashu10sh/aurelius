@@ -1,5 +1,5 @@
 import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryClient } from '@tanstack/svelte-query'
-import type { CompletionResponse, GoalStatus, TodayResponse } from 'backend/contract'
+import type { CompletionResponse, GoalDetailResponse, GoalResponse, GoalStatus, TodayResponse } from 'backend/contract'
 import { toast } from 'svelte-sonner'
 import { authClient } from '../auth'
 import { tabShown } from '../tabs'
@@ -88,14 +88,41 @@ const errorMessage = (error: unknown) => (error instanceof Error ? error.message
 
 // Every write can move XP, consistency or the streak, so refresh all reads
 // (only those on screen refetch now; hidden tabs catch up when shown).
+// The refetch isn't awaited, so the action stops pending as soon as the
+// write lands instead of after every read on screen has reloaded.
 // `quiet` skips the error toast for forms that show errors inline.
 export const useAction = <Args, Result>(fn: (args: Args) => Promise<Result>, options: { quiet?: boolean } = {}) => {
   const client = useQueryClient()
   return createMutation(() => ({
     mutationFn: fn,
-    onSuccess: () => client.invalidateQueries(),
+    onSuccess: () => {
+      void client.invalidateQueries()
+    },
     onError: (error) => {
       if (!options.quiet) toast.error(errorMessage(error))
+    },
+  }))
+}
+
+// Completing, archiving or reopening shows on the goal's screen immediately,
+// then reconciles with the server.
+export const useSetGoalStatus = (id: () => string) => {
+  const client = useQueryClient()
+  return createMutation<GoalResponse, Error, GoalStatus, { previous?: GoalDetailResponse }>(() => ({
+    mutationFn: (status) => api.goals.setStatus(id(), status),
+    onMutate: async (status) => {
+      const key = keys.goal(id())
+      await client.cancelQueries({ queryKey: key })
+      const previous = client.getQueryData<GoalDetailResponse>(key)
+      if (previous) client.setQueryData(key, { ...previous, status })
+      return { previous }
+    },
+    onError: (error, _status, context) => {
+      if (context?.previous) client.setQueryData(keys.goal(id()), context.previous)
+      toast.error(errorMessage(error))
+    },
+    onSettled: () => {
+      void client.invalidateQueries()
     },
   }))
 }
@@ -121,7 +148,11 @@ export const useToggleTask = () => {
       if (context?.previous) client.setQueryData(keys.today, context.previous)
       toast.error(errorMessage(error))
     },
-    onSettled: () => client.invalidateQueries(),
+    // Not awaited, so the caller's onSuccess (the level-up celebration) runs
+    // as soon as the server answers, not after Today has reloaded.
+    onSettled: () => {
+      void client.invalidateQueries()
+    },
   }))
 }
 

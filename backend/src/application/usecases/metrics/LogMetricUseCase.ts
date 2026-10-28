@@ -18,14 +18,18 @@ export class LogMetricUseCase {
   ) {}
 
   async execute(userId: string, goalId: string, value: number): Promise<MetricView> {
-    const user = await requireUser(this.users, userId)
-    const goal = await requireGoal(this.goals, userId, goalId)
-    const [metric] = await this.metrics.findByGoalIds([goal.id])
+    const [user, goal, [metric]] = await Promise.all([
+      requireUser(this.users, userId),
+      requireGoal(this.goals, userId, goalId),
+      this.metrics.findByGoalIds([goalId]),
+    ])
     if (!metric) throw new NotFoundError('Metric')
 
     const next = { ...metric, currentValue: value }
-    await this.metrics.save(next)
-    await this.metrics.addLog({ id: this.ids.next(), goalId: goal.id, value, loggedOn: this.calendar.today(user) })
+    await Promise.all([
+      this.metrics.save(next),
+      this.metrics.addLog({ id: this.ids.next(), goalId: goal.id, value, loggedOn: this.calendar.today(user) }),
+    ])
     return toMetricView(next)!
   }
 }

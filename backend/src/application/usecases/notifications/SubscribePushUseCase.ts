@@ -15,12 +15,12 @@ export class SubscribePushUseCase {
   ) {}
 
   async execute(userId: string, input: { endpoint: string; keys: { p256dh: string; auth: string } }): Promise<void> {
-    await requireUser(this.users, userId)
     // Push services are always https; anything else would make us fetch arbitrary URLs.
     if (!URL.canParse(input.endpoint) || new URL(input.endpoint).protocol !== 'https:') {
       throw new InvalidError('Push endpoint must be an https URL')
     }
-    const known = (await this.subscriptions.listByUser(userId)).some((s) => s.endpoint === input.endpoint)
+    const [, subscriptions] = await Promise.all([requireUser(this.users, userId), this.subscriptions.listByUser(userId)])
+    const known = subscriptions.some((s) => s.endpoint === input.endpoint)
     await this.subscriptions.save({ userId, endpoint: input.endpoint, keys: input.keys, createdAt: this.clock.now() })
     // The app re-sends its subscription on every Settings visit; only count new devices.
     if (!known) this.analytics.track(userId, 'Push Subscribed', { push_service: new URL(input.endpoint).host })
