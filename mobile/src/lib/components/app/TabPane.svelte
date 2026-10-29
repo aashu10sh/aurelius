@@ -2,19 +2,14 @@
 	import type { Snippet } from 'svelte';
 	import { provideTabShown } from '$lib/tabs';
 
-	// One tab's scroll area. It stays mounted while another tab is on show, and
-	// puts its scroll offset back on return (hidden scrollers can lose it).
+	// One tab's scroll area. It stays mounted and laid out while another tab is
+	// on show, only invisible and inert, so the browser keeps its scroll offset
+	// (display: none would reset it to the top).
 	let { shown, class: className, children }: { shown: boolean; class: string; children: Snippet } = $props();
 
 	provideTabShown(() => shown);
-
-	let scroller: HTMLElement;
-	let offset = 0;
-	$effect(() => {
-		if (shown) scroller.scrollTop = offset;
-	});
 </script>
 
-<main bind:this={scroller} hidden={!shown} onscroll={() => shown && (offset = scroller.scrollTop)} class={className}>
+<main inert={!shown} class="{className} {shown ? '' : 'invisible'}">
 	{@render children()}
 </main>

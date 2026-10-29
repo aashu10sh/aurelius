@@ -39,6 +39,8 @@
 }
 
 @custom-variant dark (&:is(.dark *));
+/* Launched from the home screen as an installed app. */
+@custom-variant standalone (@media (display-mode: standalone));
 
 /* Candlelight: warm near-black, amber accent. Aurelius is dark-only, so the
    same tokens apply everywhere. */

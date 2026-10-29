@@ -5,6 +5,7 @@
 	import TabBar from '$lib/components/app/TabBar.svelte';
 	import TabPane from '$lib/components/app/TabPane.svelte';
 	import { rise } from '$lib/feel/transitions';
+	import { pinViewport } from '$lib/viewport';
 	import GoalsTab from './goals/index.svelte';
 	import JournalTab from './journal/index.svelte';
 	import ProgressTab from './progress.svelte';
@@ -37,28 +38,34 @@
 		idle(() => {
 			for (const path of ['/goals/new', '/goals/:id', '/settings', '/journal/week'] as const) void preload(path);
 		});
+		return pinViewport();
 	});
 
-	const scroller = 'flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto overscroll-y-contain px-5 pt-[max(env(safe-area-inset-top),56px)] pb-8';
+	// Every screen fills the area above the tab bar; the tab roots are stacked there.
+	const scroller = 'absolute inset-0 flex flex-col gap-8 overflow-y-auto overscroll-y-contain px-5 pt-[max(env(safe-area-inset-top),56px)] pb-8';
 </script>
 
-<div class="mx-auto flex h-dvh max-w-md flex-col bg-background">
-	{#each tabs as t (t.path)}
-		{#if visited[t.path]}
-			<TabPane shown={tab === t.path} class={scroller}>
-				<t.screen />
-			</TabPane>
+<!-- Pinned to the screen, so the page itself never scrolls or rubber-bands. In an
+     installed app dvh comes up short on iOS 26 (no toolbar to track), lvh doesn't. -->
+<div class="fixed inset-x-0 top-0 mx-auto flex h-dvh max-w-md flex-col bg-background standalone:h-lvh">
+	<div class="relative min-h-0 flex-1">
+		{#each tabs as t (t.path)}
+			{#if visited[t.path]}
+				<TabPane shown={tab === t.path} class={scroller}>
+					<t.screen />
+				</TabPane>
+			{/if}
+		{/each}
+		{#if !tab}
+			<!-- Pushed screens arrive with a short fade and rise, scrolled to the top. -->
+			{#key route.pathname}
+				<main class={scroller}>
+					<div class="flex flex-col gap-8" in:rise={{ y: 4 }}>
+						{@render children()}
+					</div>
+				</main>
+			{/key}
 		{/if}
-	{/each}
-	{#if !tab}
-		<!-- Pushed screens arrive with a short fade and rise, scrolled to the top. -->
-		{#key route.pathname}
-			<main class={scroller}>
-				<div class="flex flex-col gap-8" in:rise={{ y: 4 }}>
-					{@render children()}
-				</div>
-			</main>
-		{/key}
-	{/if}
+	</div>
 	<TabBar />
 </div>
