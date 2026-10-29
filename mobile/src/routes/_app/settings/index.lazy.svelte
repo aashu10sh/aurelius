@@ -26,6 +26,36 @@
 	const hasPassword = $derived(accounts.data?.some((a) => a.providerId === 'credential') ?? false);
 	let linking = $state(false);
 
+	// TEMPORARY: viewport sizes as this device reports them, for chasing the tab
+	// bar sizing on real phones. Remove once it's settled.
+	let viewport = $state('');
+	$effect(() => {
+		const px = (css: string) => {
+			const probe = document.createElement('div');
+			probe.style.cssText = `position:fixed;visibility:hidden;${css}`;
+			document.body.append(probe);
+			const { height } = probe.getBoundingClientRect();
+			probe.remove();
+			return Math.round(height);
+		};
+		const measure = () => {
+			const shell = document.querySelector('[data-shell]')?.getBoundingClientRect().height ?? 0;
+			const vv = window.visualViewport;
+			viewport = [
+				`inner ${innerHeight}`,
+				`vv ${Math.round(vv?.height ?? 0)}+${Math.round(vv?.offsetTop ?? 0)}`,
+				`shell ${Math.round(shell)}`,
+				`dvh ${px('height:100dvh')} lvh ${px('height:100lvh')} svh ${px('height:100svh')}`,
+				`safe ${px('height:env(safe-area-inset-top)')}/${px('height:env(safe-area-inset-bottom)')}`,
+				`scrollY ${scrollY}`,
+				matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser',
+			].join(' · ');
+		};
+		measure();
+		window.visualViewport?.addEventListener('resize', measure);
+		return () => window.visualViewport?.removeEventListener('resize', measure);
+	});
+
 	// Connecting Google leaves the app and returns here, with ?error=<code> if it failed.
 	const oauthError = new URLSearchParams(location.search).get('error');
 	if (oauthError) {
@@ -278,3 +308,4 @@
 {/if}
 
 <p class="m-0 text-center font-mono text-xs text-muted-foreground select-text">Build {__COMMIT__}</p>
+<p class="m-0 text-center font-mono text-[10px] text-muted-foreground select-text">{viewport}</p>

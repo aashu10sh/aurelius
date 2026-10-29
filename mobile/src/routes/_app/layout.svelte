@@ -45,9 +45,12 @@
 	const scroller = 'absolute inset-0 flex flex-col gap-8 overflow-y-auto overscroll-y-contain px-5 pt-[max(env(safe-area-inset-top),56px)] pb-8';
 </script>
 
-<!-- Pinned to the screen, so the page itself never scrolls or rubber-bands. In an
-     installed app dvh comes up short on iOS 26 (no toolbar to track), lvh doesn't. -->
-<div class="fixed inset-x-0 top-0 mx-auto flex h-dvh max-w-md flex-col bg-background standalone:h-lvh">
+<!-- Pinned to the edges of the viewport, so the page itself never scrolls or
+     rubber-bands, and sized by the viewport itself rather than a vh unit: on
+     Android, dvh/lvh can include the system navigation bar and push the tab bar
+     under it. Installed iOS 26 apps get a viewport short by the status bar, so
+     there lvh (the whole screen) is the right height. -->
+<div data-shell class="fixed inset-0 mx-auto flex max-w-md flex-col bg-background ios-standalone:bottom-auto ios-standalone:h-lvh">
 	<div class="relative min-h-0 flex-1">
 		{#each tabs as t (t.path)}
 			{#if visited[t.path]}
