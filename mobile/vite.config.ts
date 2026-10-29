@@ -1,9 +1,21 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import tailwindcss from '@tailwindcss/vite'
+import { execSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { router } from 'sv-router/vite-plugin'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+
+// The commit a build came from, shown at the foot of Settings to tell versions
+// apart. "-dirty" marks a build with uncommitted changes.
+const commit = () => {
+  try {
+    const hash = execSync('git rev-parse --short HEAD').toString().trim()
+    return execSync('git status --porcelain').toString().trim() ? `${hash}-dirty` : hash
+  } catch {
+    return 'unknown'
+  }
+}
 
 export default defineConfig({
   plugins: [
@@ -47,5 +59,5 @@ export default defineConfig({
     alias: { $lib: fileURLToPath(new URL('./src/lib', import.meta.url)) },
   },
   // Tags the saved query cache, so data from an older build is never restored ($lib/api/persist.ts).
-  define: { __BUILD_ID__: JSON.stringify(Date.now().toString(36)) },
+  define: { __BUILD_ID__: JSON.stringify(Date.now().toString(36)), __COMMIT__: JSON.stringify(commit()) },
 })

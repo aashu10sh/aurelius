@@ -276,3 +276,5 @@
 {:else}
 	<LoadState error={me.error} onretry={() => me.refetch()} />
 {/if}
+
+<p class="m-0 text-center font-mono text-xs text-muted-foreground select-text">Build {__COMMIT__}</p>
